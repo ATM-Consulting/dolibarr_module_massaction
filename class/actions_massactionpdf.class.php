@@ -152,8 +152,8 @@ class Actionsmassactionpdf
         }
 
         if (! $error) {
-            $this->results = array('myreturn' => 999);
-            $this->resprints = 'A text to show';
+            /*$this->results = array('myreturn' => 999);
+            $this->resprints = 'A text to show';*/
             return 0; // or return 1 to replace standard code
         } else {
             $this->errors[] = $errormsg;
@@ -177,6 +177,8 @@ class Actionsmassactionpdf
 
         $error = 0; // Error counter
 
+		$TContext = explode(":", $parameters['context']);
+
         //print_r($parameters); print_r($object); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)		// do something only for the context 'somecontext1' or 'somecontext2'
         {
@@ -186,6 +188,12 @@ class Actionsmassactionpdf
             //$disabled = false;
             //$this->resprints.= '<option value="generate_pdf"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionPDFGeneratePDF").'</option>';
         }
+
+        if (in_array('supplierinvoicelist', $TContext))
+		{
+			$disabled = false;
+			$this->resprints .= '<option value="presend"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("SendByMail").'</option>';
+		}
 
         if (! $error) {
             return 0; // or return 1 to replace standard code
