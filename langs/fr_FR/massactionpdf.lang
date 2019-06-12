@@ -1,47 +1,42 @@
-Module104102Name = massactionpdf
-Module104102Desc = massactionpdf Description
+# Copyright (C) 2019 Maxime Kohlhaas <maxime@m-development.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>Vous pouvez retrouver la documentation sur notre <a href="http://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>Pour toute question technique ou retour, contactez-nous sur <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>Pour toute question commerciale, contactez-nous sur <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> ou au +33 9 77 19 50 70<br><br>Retrouvez nos autres modules sur <a href="http://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
+#
+# Générique
+#
 
-massactionpdfSetup = Configuration du module massactionpdf
-massactionpdfAbout = A propos du module massactionpdf
+# Module label 'ModuleMassActionPDFName'
+ModuleMassActionPDFName = Actions en masse PDF
+# Module description 'ModuleMassActionPDFDesc'
+ModuleMassActionPDFDesc = Ajoute des actions sur les listes (zip, génération PDF, ...)
 
-massactionpdf=massactionpdf
-AbricotNeedUpdate=Le module abricot doit être mis à jour
+#
+# Page d'administration
+#
+MassActionPDFSetup = Configuration du module Actions en masse
+Settings = Réglages
+MassActionPDFSetupPage = Page de configuration du module Actions en masse
 
-# SETUP
-ParamLabel=Nom du paramètre
-ParamDesc=Une description si besoin
-ParamHelp=Le contenu de l'aide
+#
+# Page À propos
+#
+About = À propos
+MassActionPDFAbout = À propos de Actions en masse
+MassActionPDFAboutPage = Page à propos de Actions en masse
 
-# MENU
-TopMenumassactionpdf=massactionpdf
-
-# STATUS
-massactionpdfStatusDraft=Brouillon (à valider)
-massactionpdfStatusValidated=Validée (à accepter)
-massactionpdfStatusRefused=Refusée (fermée)
-massactionpdfStatusAccepted=Acceptée (fermée)
-
-Draft=Brouillon
-Validate=Validé
-Refused=Refusé
-Accepted=Accepté
-
-# LIST
-massactionpdfList=Liste massactionpdf
-Nomassactionpdf=(vide)
-
-# CARD
-Newmassactionpdf=Création massactionpdf
-massactionpdfCard=Fiche massactionpdf
-
-# CARD TPL
-Save=Enregistrer
-CreateDraft=Créer brouillon
-Cancel=Annuler
-Validate=Valider
-Modify=Modifier
-Reopen=Rouvrir
-ToClone=Cloner
-Delete=Supprimer
+MassActionPDFGenerateZIP=Générer une archive des documents
+MassActionPDFZIPGenerated=Fichier archive généré, %s fichiers ajoutés
+NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
+NoDirectoryAvailable=Répertoires non disponibles

@@ -173,6 +173,7 @@ class Actionsmassactionpdf
     public function addMoreMassActions($parameters, &$object, &$action, $hookmanager)
     {
         global $conf, $user, $langs;
+        $langs->load('massactionpdf@massactionpdf');
 
         $error = 0; // Error counter
 
