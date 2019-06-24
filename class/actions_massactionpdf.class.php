@@ -18,7 +18,7 @@
 
 /**
  * \file    class/actions_massactionpdf.class.php
- * \ingroup massactionpdf2
+ * \ingroup massactionpdf
  * \brief   This file is an example hook overload class file
  *          Put some comments here
  */
@@ -62,17 +62,18 @@ class Actionsmassactionpdf
      */
     public function doMassActions($parameters, &$object, &$action, $hookmanager)
     {
+        require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
         global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
-
+        
         $error = 0; // Error counter
 
         //print_r($parameters); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massactionpdf2@massactionpdf2');
+            $langs->load('massactionpdf@massactionpdf');
 
             // @TODO Ask for compression format and filename
-            if($massaction == 'generate_zip')
+            /*if($massaction == 'generate_zip')
             {
                 $form = new Form($db);
                 $formquestion = array(
@@ -81,7 +82,7 @@ class Actionsmassactionpdf
                 $text = $langs->trans('MassActionPDFGenerateZIPOptionsText');
                 $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?massaction=confirm_generate_zip', $langs->trans('MassActionPDFGenerateZIPOptions'), $text, 'confirm_generate_zip', $formquestion, "yes", 2);
                 $this->resprints = $formconfirm;
-            }
+            }*/
 
             if($massaction == 'generate_zip')
             {
@@ -123,7 +124,7 @@ class Actionsmassactionpdf
                     $compressmode = GETPOST('compress_mode');
                     $compressmode = 'zip';
                     $filename = GETPOST('filename');
-                    $filename = 'dolibarr_'.date('Ymd_his').'.'.$compressmode;
+                    $filename = 'dolibarr_'.date('Ymd_His').'.'.$compressmode;
 
                     // Copy files in a temp directory
                     $tempdir = $diroutputmassaction.'/temp';
@@ -140,7 +141,7 @@ class Actionsmassactionpdf
 
                     setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
 
-                    // @TODO : download the file (Automatically ?)
+                    // Auto Download
                     if (file_exists($diroutputmassaction.'/'.$filename)) {
                         header('Content-Type: application/zip');
                         header('Content-Disposition: attachment; filename="'.$filename.'"');
@@ -182,7 +183,7 @@ class Actionsmassactionpdf
         //print_r($parameters); print_r($object); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)		// do something only for the context 'somecontext1' or 'somecontext2'
         {
-            $langs->load('massactionpdf2@massactionpdf2');
+            $langs->load('massactionpdf@massactionpdf');
             $disabled = false;
             $this->resprints = '<option value="generate_zip"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionPDFGenerateZIP").'</option>';
             //$disabled = false;

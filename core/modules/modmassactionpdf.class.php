@@ -91,9 +91,7 @@ class modmassactionpdf extends DolibarrModules
 		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@massactionpdf')) // Set here all workflow context managed by module
 		//                        );
 		$this->module_parts = array(
-			'hooks' => array(
-				'invoicelist'
-				,'supplierinvoicelist'
+			'hooks' => array('data'=>array('main')
 			)
 		);
 
@@ -102,7 +100,7 @@ class modmassactionpdf extends DolibarrModules
 		$this->dirs = array();
 
 		// Config pages. Put here list of php page, stored into massactionpdf/admin directory, to use to setup module.
-		$this->config_page_url = array();
+		$this->config_page_url = 'massactionpdf_about.php@massactionpdf';
 
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module

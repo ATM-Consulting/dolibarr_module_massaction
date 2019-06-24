@@ -43,7 +43,7 @@ if (! $user->admin) {
 /*
  * View
  */
-$page_name = "massactionpdfAbout";
+$page_name = "About";
 llxHeader('', $langs->trans($page_name));
 
 // Subheader
@@ -56,7 +56,7 @@ $head = massactionpdfAdminPrepareHead();
 dol_fiche_head(
     $head,
     'about',
-    $langs->trans("Module104102Name"),
+    $langs->trans("ModuleMassActionPDFName"),
     0,
     'massactionpdf@massactionpdf'
 );
