@@ -123,7 +123,7 @@ class Actionsmassactionpdf
                 if(!$error) {
                     $compressmode = GETPOST('compress_mode');
                     $compressmode = 'zip';
-                    $filename = GETPOST('filename');
+                    //$filename = GETPOST('filename');
                     $filename = 'dolibarr_'.date('Ymd_His').'.'.$compressmode;
 
                     // Copy files in a temp directory
@@ -135,6 +135,15 @@ class Actionsmassactionpdf
 
                     // @TODO : deal with other compression type than zip
                     // Generate the zip archive
+                    $files = new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($tempdir),
+                        RecursiveIteratorIterator::LEAVES_ONLY
+                    );
+
+                    foreach ($files as $name => $file)
+                    {
+                        $tempdir = $file->getRealPath();
+                    }
                     dol_compress_dir($tempdir, $diroutputmassaction.'/'.$filename, $compressmode);
                     // Delete temp directory
                     dol_delete_dir_recursive($tempdir);
