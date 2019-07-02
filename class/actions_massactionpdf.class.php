@@ -135,27 +135,17 @@ class Actionsmassactionpdf
 
                     // @TODO : deal with other compression type than zip
                     // Generate the zip archive
-                    $files = new RecursiveIteratorIterator(
-                        new RecursiveDirectoryIterator($tempdir),
-                        RecursiveIteratorIterator::LEAVES_ONLY
-                    );
-
-                    foreach ($files as $name => $file)
-                    {
-                        $tempdir = $file->getRealPath();
-                    }
+                    $file = new SplFileInfo(($tempdir));
+                    $tempdir = $file->getRealPath();
                     dol_compress_dir($tempdir, $diroutputmassaction.'/'.$filename, $compressmode);
                     // Delete temp directory
                     dol_delete_dir_recursive($tempdir);
-
-                    setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
-
                     // Auto Download
                     if (file_exists($diroutputmassaction.'/'.$filename)) {
+                        setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
                         header('Content-Type: application/zip');
                         header('Content-Disposition: attachment; filename="'.$filename.'"');
                         header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
-
                         readfile($diroutputmassaction.'/'.$filename);
                     }
                 }
