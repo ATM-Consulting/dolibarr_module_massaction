@@ -100,7 +100,7 @@ class modmassactionpdf extends DolibarrModules
 		$this->dirs = array();
 
 		// Config pages. Put here list of php page, stored into massactionpdf/admin directory, to use to setup module.
-		$this->config_page_url = 'massactionpdf_about.php@massactionpdf';
+		$this->config_page_url = 'massactionpdf_setup.php@massactionpdf';
 
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module

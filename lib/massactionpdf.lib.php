@@ -32,6 +32,10 @@ function massactionpdfAdminPrepareHead()
     $h = 0;
     $head = array();
 
+    $head[$h][0] = dol_buildpath("/massactionpdf/admin/massactionpdf_setup.php", 1);
+    $head[$h][1] = $langs->trans("Parameters");
+    $head[$h][2] = 'settings';
+    $h++;
 
     $head[$h][0] = dol_buildpath("/massactionpdf/admin/massactionpdf_about.php", 1);
     $head[$h][1] = $langs->trans("About");
