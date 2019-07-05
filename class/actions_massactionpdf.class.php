@@ -64,7 +64,7 @@ class Actionsmassactionpdf
     {
         require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
         global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
-        
+
         $error = 0; // Error counter
 
         //print_r($parameters); echo "action: " . $action;
@@ -142,12 +142,20 @@ class Actionsmassactionpdf
                     dol_delete_dir_recursive($tempdir);
                     // Auto Download
                     if (file_exists($diroutputmassaction.'/'.$filename)) {
-                        setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
-                        header('Content-Type: application/zip');
-                        header('Content-Disposition: attachment; filename="'.$filename.'"');
-                        header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
-                        readfile($diroutputmassaction.'/'.$filename);
+                        if (isset($conf->global->MASSACTION_AUTO_DOWNLOAD)){
+                            header('Content-Type: application/zip');
+                            header('Content-Disposition: attachment; filename="'.$filename.'"');
+                            header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
+                            readfile($diroutputmassaction.'/'.$filename);
+                        }
+                        else {
+                            setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
+                        }
                     }
+                    else{
+                        setEventMessage($langs->trans('MassActionErrorGeneration'),'errors');
+                    }
+                    header('Location:'.$_SERVER['PHP_SELF']);
                 }
             }
         }

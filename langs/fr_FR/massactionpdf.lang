@@ -21,7 +21,7 @@
 # Module label 'ModuleMassActionPDFName'
 ModuleMassActionPDFName = Actions en masse PDF
 # Module description 'ModuleMassActionPDFDesc'
-ModuleMassActionPDFDesc = Ajoute des actions sur les listes (zip, génération PDF, ...)
+ModuleMassActionPDFDesc = Génération d'archives ZIP
 
 #
 # Page d'administration
@@ -39,7 +39,11 @@ About = À propos
 MassActionPDFAbout = À propos de Actions en masse
 MassActionPDFAboutPage = Page à propos de Actions en masse
 
+massactionpdfSetup=Page de configuration Massaction
 MassActionPDFGenerateZIP=Générer une archive des documents
 MassActionPDFZIPGenerated=Fichier archive généré, %s fichiers ajoutés
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
 NoDirectoryAvailable=Répertoires non disponibles
+MassActionErrorGeneration=Erreur à la génération
+SetupAutoDownloadTitle=Auto Download
+SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
