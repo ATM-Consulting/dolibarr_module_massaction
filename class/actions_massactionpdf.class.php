@@ -121,7 +121,7 @@ class Actionsmassactionpdf
                 }
 
                 if(!$error) {
-                    $compressmode = GETPOST('compress_mode');
+                    $compressmode = GETPOST('compress_mode', 'alphanohtml');
                     $compressmode = 'zip';
                     //$filename = GETPOST('filename');
                     $filename = 'dolibarr_'.date('Ymd_His').'.'.$compressmode;
