@@ -44,9 +44,9 @@ class modmassactionpdf extends DolibarrModules
 
         $this->db = $db;
 
-		$this->editor_name = 'ATM-Consulting';
+		$this->editor_name = 'ATM Consulting';
 		$this->editor_url = 'https://www.atm-consulting.fr';
-		
+
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 104102; // 104000 to 104999 for ATM CONSULTING
@@ -55,13 +55,13 @@ class modmassactionpdf extends DolibarrModules
 
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
-		$this->family = "ATM";
+		$this->family = "ATM Consulting - Autre";
 		// Module label (no space allowed), used if translation string 'ModuleXXXName' not found (where XXX is value of numeric property 'numero' of module)
 		$this->name = "MassActionPDF";
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "ModuleMassActionPDFDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.0.0';
+		$this->version = '1.1.0';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -70,7 +70,7 @@ class modmassactionpdf extends DolibarrModules
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
 		$this->picto='massactionpdf@massactionpdf';
-		
+
 		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
 		// for default path (eg: /massactionpdf/core/xxxxx) (0=disable, 1=enable)
 		// for specific path of parts (eg: /massactionpdf/core/modules/barcode)
@@ -192,7 +192,7 @@ class modmassactionpdf extends DolibarrModules
 		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
-		
+
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		$this->rights[$r][1] = 'massactionpdf_write';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
@@ -236,9 +236,9 @@ class modmassactionpdf extends DolibarrModules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
-		
+
 /*
-		$this->menu[$r]=array(	
+		$this->menu[$r]=array(
 			'fk_menu'=>0,			                // Put 0 if this is a top menu
 			'type'=>'top',			                // This is a Top menu entry
 			'titre'=>$langs->trans('TopMenumassactionpdf'),
@@ -269,7 +269,7 @@ class modmassactionpdf extends DolibarrModules
 			'user'=>0
 		);
 		$r++;
-		
+
 		$this->menu[$r]=array(
 			'fk_menu'=>'fk_mainmenu=massactionpdf,fk_leftmenu=massactionpdf_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type'=>'left',			                // This is a Left menu entry
@@ -285,7 +285,7 @@ class modmassactionpdf extends DolibarrModules
 			'user'=>0
 		);				                // 0=Menu for internal users, 1=external users, 2=both
 		$r++;
-		
+
 
 		$this->menu[$r]=array(
 			'fk_menu'=>'fk_mainmenu=massactionpdf,fk_leftmenu=massactionpdf_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
@@ -303,7 +303,7 @@ class modmassactionpdf extends DolibarrModules
 		);				                // 0=Menu for internal users, 1=external users, 2=both
 		$r++;
 */
-		
+
 		// Exports
 		$r=1;
 
@@ -333,12 +333,8 @@ class modmassactionpdf extends DolibarrModules
 	function init($options='')
 	{
 		$sql = array();
-		
+
 		define('INC_FROM_DOLIBARR',true);
-
-		require dol_buildpath('/massactionpdf/script/create-maj-base.php');
-
-		$result=$this->_load_tables('/massactionpdf/sql/');
 
 		return $this->_init($sql, $options);
 	}
