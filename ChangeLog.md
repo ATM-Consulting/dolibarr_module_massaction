@@ -1,4 +1,4 @@
-# Changelog for massactionpdf
+# Changelog for massaction
 
 ## Unreleased
 - NEW: cleanup (delete unused files + functions) + compatibility with

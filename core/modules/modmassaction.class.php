@@ -18,20 +18,20 @@
  */
 
 /**
- * 	\defgroup   massactionpdf     Module massactionpdf
+ * 	\defgroup   massaction     Module massaction
  *  \brief      Example of a module descriptor.
- *				Such a file must be copied into htdocs/massactionpdf/core/modules directory.
- *  \file       htdocs/massactionpdf/core/modules/modmassactionpdf.class.php
- *  \ingroup    massactionpdf
- *  \brief      Description and activation file for module massactionpdf
+ *				Such a file must be copied into htdocs/massaction/core/modules directory.
+ *  \file       htdocs/massaction/core/modules/modmassaction.class.php
+ *  \ingroup    massaction
+ *  \brief      Description and activation file for module massaction
  */
 include_once DOL_DOCUMENT_ROOT .'/core/modules/DolibarrModules.class.php';
 
 
 /**
- *  Description and activation class for module massactionpdf
+ *  Description and activation class for module massaction
  */
-class modmassactionpdf extends DolibarrModules
+class modmassaction extends DolibarrModules
 {
 	/**
 	 *   Constructor. Define names, constants, directories, boxes, permissions
@@ -51,15 +51,15 @@ class modmassactionpdf extends DolibarrModules
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 104102; // 104000 to 104999 for ATM CONSULTING
 		// Key text used to identify module (for permissions, menus, etc...)
-		$this->rights_class = 'massactionpdf';
+		$this->rights_class = 'massaction';
 
 		// Family can be 'crm','financial','hr','projects','products','ecm','technic','other'
 		// It is used to group modules in module setup page
-		$this->family = "ATM Consulting - Autre";
+		$this->family = "ATM";
 		// Module label (no space allowed), used if translation string 'ModuleXXXName' not found (where XXX is value of numeric property 'numero' of module)
-		$this->name = "MassActionPDF";
+		$this->name = "MassAction";
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
-		$this->description = "ModuleMassActionPDFDesc";
+		$this->description = "ModuleMassActionDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
 		$this->version = '1.1.0';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
@@ -69,12 +69,12 @@ class modmassactionpdf extends DolibarrModules
 		// Name of image file used for this module.
 		// If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
-		$this->picto='massactionpdf@massactionpdf';
+		$this->picto='massaction@massaction';
 
 		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
-		// for default path (eg: /massactionpdf/core/xxxxx) (0=disable, 1=enable)
-		// for specific path of parts (eg: /massactionpdf/core/modules/barcode)
-		// for specific css file (eg: /massactionpdf/css/massactionpdf.css.php)
+		// for default path (eg: /massaction/core/xxxxx) (0=disable, 1=enable)
+		// for specific path of parts (eg: /massaction/core/modules/barcode)
+		// for specific css file (eg: /massaction/css/massaction.css.php)
 		//$this->module_parts = array(
 		//                        	'triggers' => 0,                                 	// Set this to 1 if module has its own trigger directory (core/triggers)
 		//							'login' => 0,                                    	// Set this to 1 if module has its own login method directory (core/login)
@@ -84,11 +84,11 @@ class modmassactionpdf extends DolibarrModules
 		//                        	'tpl' => 0,                                      	// Set this to 1 if module overwrite template dir (core/tpl)
 		//							'barcode' => 0,                                  	// Set this to 1 if module has its own barcode directory (core/modules/barcode)
 		//							'models' => 0,                                   	// Set this to 1 if module has its own models directory (core/modules/xxx)
-		//							'css' => array('/massactionpdf/css/massactionpdf.css.php'),	// Set this to relative path of css file if module has its own css file
-	 	//							'js' => array('/massactionpdf/js/massactionpdf.js'),          // Set this to relative path of js file if module must load a js on all pages
+		//							'css' => array('/massaction/css/massaction.css.php'),	// Set this to relative path of css file if module has its own css file
+	 	//							'js' => array('/massaction/js/massaction.js'),          // Set this to relative path of js file if module must load a js on all pages
 		//							'hooks' => array('hookcontext1','hookcontext2')  	// Set here all hooks context managed by module
 		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
-		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@massactionpdf')) // Set here all workflow context managed by module
+		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@massaction')) // Set here all workflow context managed by module
 		//                        );
 		$this->module_parts = array(
 			'hooks' => array('data'=>array('main')
@@ -96,11 +96,11 @@ class modmassactionpdf extends DolibarrModules
 		);
 
 		// Data directories to create when module is enabled.
-		// Example: this->dirs = array("/massactionpdf/temp");
+		// Example: this->dirs = array("/massaction/temp");
 		$this->dirs = array();
 
-		// Config pages. Put here list of php page, stored into massactionpdf/admin directory, to use to setup module.
-		$this->config_page_url = 'massactionpdf_setup.php@massactionpdf';
+		// Config pages. Put here list of php page, stored into massaction/admin directory, to use to setup module.
+		$this->config_page_url = 'massaction_setup.php@massaction';
 
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module
@@ -109,7 +109,7 @@ class modmassactionpdf extends DolibarrModules
 		$this->conflictwith = array();	// List of modules id this module is in conflict with
 		$this->phpmin = array(5,0);					// Minimum version of PHP required by module
 		$this->need_dolibarr_version = array(3,0);	// Minimum version of Dolibarr required by module
-		$this->langfiles = array("massactionpdf@massactionpdf");
+		$this->langfiles = array("massaction@massaction");
 
 		// Constants
 		// List of particular constants to add when module is enabled (key, 'chaine', value, desc, visible, 'current' or 'allentities', deleteonunactive)
@@ -119,8 +119,8 @@ class modmassactionpdf extends DolibarrModules
 		$this->const = array();
 
 		// Array to add new pages in new tabs
-		// Example: $this->tabs = array('objecttype:+tabname1:Title1:massactionpdf@massactionpdf:$user->rights->massactionpdf->read:/massactionpdf/mynewtab1.php?id=__ID__',  	// To add a new tab identified by code tabname1
-        //                              'objecttype:+tabname2:Title2:massactionpdf@massactionpdf:$user->rights->othermodule->read:/massactionpdf/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2
+		// Example: $this->tabs = array('objecttype:+tabname1:Title1:massaction@massaction:$user->rights->massaction->read:/massaction/mynewtab1.php?id=__ID__',  	// To add a new tab identified by code tabname1
+        //                              'objecttype:+tabname2:Title2:massaction@massaction:$user->rights->othermodule->read:/massaction/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2
         //                              'objecttype:-tabname:NU:conditiontoremove');                                                     						// To remove an existing tab identified by code tabname
 		// where objecttype can be
 		// 'categories_x'	  to add a tab in category view (replace 'x' by type of category (0=product, 1=supplier, 2=customer, 3=member)
@@ -145,16 +145,16 @@ class modmassactionpdf extends DolibarrModules
         $this->tabs = array();
 
         // Dictionaries
-	    if (! isset($conf->massactionpdf->enabled))
+	    if (! isset($conf->massaction->enabled))
         {
-        	$conf->massactionpdf=new stdClass();
-        	$conf->massactionpdf->enabled=0;
+        	$conf->massaction=new stdClass();
+        	$conf->massaction->enabled=0;
         }
 		$this->dictionaries=array();
         /* Example:
-        if (! isset($conf->massactionpdf->enabled)) $conf->massactionpdf->enabled=0;	// This is to avoid warnings
+        if (! isset($conf->massaction->enabled)) $conf->massaction->enabled=0;	// This is to avoid warnings
         $this->dictionaries=array(
-            'langs'=>'massactionpdf@massactionpdf',
+            'langs'=>'massaction@massaction',
             'tabname'=>array(MAIN_DB_PREFIX."table1",MAIN_DB_PREFIX."table2",MAIN_DB_PREFIX."table3"),		// List of tables we want to see into dictonnary editor
             'tablib'=>array("Table1","Table2","Table3"),													// Label of tables
             'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table1 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table2 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table3 as f'),	// Request to select fields
@@ -163,7 +163,7 @@ class modmassactionpdf extends DolibarrModules
             'tabfieldvalue'=>array("code,label","code,label","code,label"),																				// List of fields (list of fields to edit a record)
             'tabfieldinsert'=>array("code,label","code,label","code,label"),																			// List of fields (list of fields for insert)
             'tabrowid'=>array("rowid","rowid","rowid"),																									// Name of columns with primary key (try to always name it 'rowid')
-            'tabcond'=>array($conf->massactionpdf->enabled,$conf->massactionpdf->enabled,$conf->massactionpdf->enabled)												// Condition to show each dictionary
+            'tabcond'=>array($conf->massaction->enabled,$conf->massaction->enabled,$conf->massaction->enabled)												// Condition to show each dictionary
         );
         */
 
@@ -187,14 +187,14 @@ class modmassactionpdf extends DolibarrModules
 		// $r++;
 /*
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'massactionpdf_read';	// Permission label
+		$this->rights[$r][1] = 'massaction_read';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'massactionpdf_write';	// Permission label
+		$this->rights[$r][1] = 'massaction_write';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
@@ -208,31 +208,31 @@ class modmassactionpdf extends DolibarrModules
 		// Add here entries to declare new menus
 		//
 		// Example to declare a new Top Menu entry and its Left menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massactionpdf',		// Put 0 if this is a single top menu or keep fk_mainmenu to give an entry on left
+		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massaction',		// Put 0 if this is a single top menu or keep fk_mainmenu to give an entry on left
 		//							'type'=>'top',			                // This is a Top menu entry
-		//							'titre'=>'massactionpdf top menu',
-		//							'mainmenu'=>'massactionpdf',
-		//							'leftmenu'=>'massactionpdf_left',			// This is the name of left menu for the next entries
-		//							'url'=>'/massactionpdf/pagetop.php',
-		//							'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+		//							'titre'=>'massaction top menu',
+		//							'mainmenu'=>'massaction',
+		//							'leftmenu'=>'massaction_left',			// This is the name of left menu for the next entries
+		//							'url'=>'/massaction/pagetop.php',
+		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 		//							'position'=>100,
-		//							'enabled'=>'$conf->massactionpdf->enabled',	// Define condition to show or hide menu entry. Use '$conf->massactionpdf->enabled' if entry must be visible if module is enabled.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massactionpdf->level1->level2' if you want your menu with a permission rules
+		//							'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->massaction->enabled' if entry must be visible if module is enabled.
+		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massaction->level1->level2' if you want your menu with a permission rules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
 		//
 		// Example to declare a Left Menu entry into an existing Top menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massactionpdf,fk_leftmenu=massactionpdf_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 		//							'type'=>'left',			                // This is a Left menu entry
-		//							'titre'=>'massactionpdf left menu',
-		//							'mainmenu'=>'massactionpdf',
-		//							'leftmenu'=>'massactionpdf_left',			// Goes into left menu previously created by the mainmenu
-		//							'url'=>'/massactionpdf/pagelevel2.php',
-		//							'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+		//							'titre'=>'massaction left menu',
+		//							'mainmenu'=>'massaction',
+		//							'leftmenu'=>'massaction_left',			// Goes into left menu previously created by the mainmenu
+		//							'url'=>'/massaction/pagelevel2.php',
+		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 		//							'position'=>100,
-		//							'enabled'=>'$conf->massactionpdf->enabled',  // Define condition to show or hide menu entry. Use '$conf->massactionpdf->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massactionpdf->level1->level2' if you want your menu with a permission rules
+		//							'enabled'=>'$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->massaction->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massaction->level1->level2' if you want your menu with a permission rules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
@@ -241,46 +241,46 @@ class modmassactionpdf extends DolibarrModules
 		$this->menu[$r]=array(
 			'fk_menu'=>0,			                // Put 0 if this is a top menu
 			'type'=>'top',			                // This is a Top menu entry
-			'titre'=>$langs->trans('TopMenumassactionpdf'),
-			'mainmenu'=>'massactionpdf',
+			'titre'=>$langs->trans('TopMenumassaction'),
+			'mainmenu'=>'massaction',
 			'leftmenu'=>'',
-			'url'=>'/massactionpdf/list.php',
-			'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'url'=>'/massaction/list.php',
+			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=>'$conf->massactionpdf->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massactionpdf->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);
 		$r++;
 
 		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massactionpdf',			                // Put 0 if this is a top menu
+			'fk_menu'=>'fk_mainmenu=massaction',			                // Put 0 if this is a top menu
 			'type'=>'left',			                // This is a Top menu entry
-			'titre'=>$langs->trans('TopMenumassactionpdf'),
-			'mainmenu'=>'massactionpdf',
-			'leftmenu'=>'massactionpdf_left',
-			'url'=>'/massactionpdf/list.php',
-			'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'titre'=>$langs->trans('TopMenumassaction'),
+			'mainmenu'=>'massaction',
+			'leftmenu'=>'massaction_left',
+			'url'=>'/massaction/list.php',
+			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=>'$conf->massactionpdf->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massactionpdf->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);
 		$r++;
 
 		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massactionpdf,fk_leftmenu=massactionpdf_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type'=>'left',			                // This is a Left menu entry
-			'titre'=>$langs->trans('LeftMenumassactionpdfCreate'),
-			'mainmenu'=>'massactionpdf',
-			'leftmenu'=>'massactionpdf_left_create',
-			'url'=>'/massactionpdf/card.php?action=create',
-			'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'titre'=>$langs->trans('LeftMenumassactionCreate'),
+			'mainmenu'=>'massaction',
+			'leftmenu'=>'massaction_left_create',
+			'url'=>'/massaction/card.php?action=create',
+			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=> '$conf->massactionpdf->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massactionpdf->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);				                // 0=Menu for internal users, 1=external users, 2=both
@@ -288,16 +288,16 @@ class modmassactionpdf extends DolibarrModules
 
 
 		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massactionpdf,fk_leftmenu=massactionpdf_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type'=>'left',			                // This is a Left menu entry
-			'titre'=>$langs->trans('LeftMenumassactionpdfList'),
-			'mainmenu'=>'massactionpdf',
-			'leftmenu'=>'massactionpdf_left_list',
-			'url'=>'/massactionpdf/list.php',
-			'langs'=>'massactionpdf@massactionpdf',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'titre'=>$langs->trans('LeftMenumassactionList'),
+			'mainmenu'=>'massaction',
+			'leftmenu'=>'massaction_left_list',
+			'url'=>'/massaction/list.php',
+			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=> '$conf->massactionpdf->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massactionpdf->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);				                // 0=Menu for internal users, 1=external users, 2=both

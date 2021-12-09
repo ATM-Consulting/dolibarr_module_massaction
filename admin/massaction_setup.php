@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * 	\file		admin/massactionpdf.php
- * 	\ingroup	massactionpdf
+ * 	\file		admin/massaction.php
+ * 	\ingroup	massaction
  * 	\brief		This file is an example module setup page
  * 				Put some comments here
  */
@@ -28,10 +28,10 @@ if (! $res) {
 }
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
-require_once '../lib/massactionpdf.lib.php';
+require_once '../lib/massaction.lib.php';
 dol_include_once('abricot/includes/lib/admin.lib.php');
 // Translations
-$langs->load("massactionpdf@massactionpdf");
+$langs->load("massaction@massaction");
 // Access control
 if (! $user->admin) {
     accessforbidden();
@@ -71,20 +71,20 @@ if (preg_match('/del_(.*)/',$action,$reg))
 /*
  * View
  */
-$page_name = "massactionpdfSetup";
+$page_name = "massactionSetup";
 llxHeader('', $langs->trans($page_name));
 // Subheader
 $linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
     . $langs->trans("BackToModuleList") . '</a>';
 print load_fiche_titre($langs->trans($page_name), $linkback);
 // Configuration header
-$head = massactionpdfAdminPrepareHead();
+$head = massactionAdminPrepareHead();
 dol_fiche_head(
     $head,
     'settings',
-    $langs->trans("ModuleMassActionPDFName"),
+    $langs->trans("ModuleMassActionName"),
     -1,
-    "massactionpdf@massactionpdf"
+    "massaction@massaction"
 );
 // Setup page goes here
 $form=new Form($db);
