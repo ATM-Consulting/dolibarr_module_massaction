@@ -18,7 +18,7 @@
 
 /**
  * 	\file		admin/about.php
- * 	\ingroup	massactionpdf
+ * 	\ingroup	massaction
  * 	\brief		This file is an example about page
  * 				Put some comments here
  */
@@ -30,10 +30,10 @@ if (! $res) {
 
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
-require_once '../lib/massactionpdf.lib.php';
+require_once '../lib/massaction.lib.php';
 
 // Translations
-$langs->load("massactionpdf@massactionpdf");
+$langs->load("massaction@massaction");
 
 // Access control
 if (! $user->admin) {
@@ -52,13 +52,13 @@ $linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
 print_fiche_titre($langs->trans($page_name), $linkback);
 
 // Configuration header
-$head = massactionpdfAdminPrepareHead();
+$head = massactionAdminPrepareHead();
 dol_fiche_head(
     $head,
     'about',
-    $langs->trans("ModuleMassActionPDFName"),
+    $langs->trans("ModuleMassActionName"),
     0,
-    'massactionpdf@massactionpdf'
+    'massaction@massaction'
 );
 
 // About page goes here

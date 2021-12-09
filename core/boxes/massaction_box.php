@@ -18,7 +18,7 @@
 
 /**
  * 	\file		core/boxes/mybox.php
- * 	\ingroup	massactionpdf
+ * 	\ingroup	massaction
  * 	\brief		This file is a sample box definition file
  * 				Put some comments here
  */
@@ -27,13 +27,13 @@ include_once DOL_DOCUMENT_ROOT . "/core/boxes/modules_boxes.php";
 /**
  * Class to manage the box
  */
-class massactionpdfbox extends ModeleBoxes
+class massactionbox extends ModeleBoxes
 {
 
     public $boxcode = "mybox";
-    public $boximg = "massactionpdf@massactionpdf";
+    public $boximg = "massaction@massaction";
     public $boxlabel;
-    public $depends = array("massactionpdf");
+    public $depends = array("massaction");
     public $db;
     public $param;
     public $info_box_head = array();
@@ -62,7 +62,7 @@ class massactionpdfbox extends ModeleBoxes
 
         $this->max = $max;
 
-        //include_once DOL_DOCUMENT_ROOT . "/massactionpdf/class/massactionpdf.class.php";
+        //include_once DOL_DOCUMENT_ROOT . "/massaction/class/massaction.class.php";
 
         $text = $langs->trans("MyBoxDescription", $max);
         $this->info_box_head = array(

@@ -18,17 +18,17 @@
 #
 
 
-# Module label 'ModuleMassActionPDFName'
-ModuleMassActionPDFName = Actions en masse PDF
-# Module description 'ModuleMassActionPDFDesc'
-ModuleMassActionPDFDesc = Génération d'archives ZIP
+# Module label 'ModuleMassActionName'
+ModuleMassActionName = Actions en masse PDF
+# Module description 'ModuleMassActionDesc'
+ModuleMassActionDesc = Génération d'archives ZIP
 
 #
 # Page d'administration
 #
-MassActionPDFSetup = Configuration du module Actions en masse
+MassActionSetup = Configuration du module Actions en masse
 Settings = Réglages
-MassActionPDFSetupPage = Page de configuration du module Actions en masse
+MassActionSetupPage = Page de configuration du module Actions en masse
 
 #
 # Page À propos
@@ -36,12 +36,12 @@ MassActionPDFSetupPage = Page de configuration du module Actions en masse
 ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>Vous pouvez retrouver la documentation sur notre <a href="http://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>Pour toute question technique ou retour, contactez-nous sur <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>Pour toute question commerciale, contactez-nous sur <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> ou au +33 9 77 19 50 70<br><br>Retrouvez nos autres modules sur <a href="http://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
 
 About = À propos
-MassActionPDFAbout = À propos de Actions en masse
-MassActionPDFAboutPage = Page à propos de Actions en masse
+MassActionAbout = À propos de Actions en masse
+MassActionAboutPage = Page à propos de Actions en masse
 
-massactionpdfSetup=Page de configuration Massaction
-MassActionPDFGenerateZIP=Générer une archive des documents
-MassActionPDFZIPGenerated=Fichier archive généré, %s fichiers ajoutés
+massactionSetup=Page de configuration Massaction
+MassActionGenerateZIP=Générer une archive des documents
+MassActionZIPGenerated=Fichier archive généré, %s fichiers ajoutés
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
 NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération

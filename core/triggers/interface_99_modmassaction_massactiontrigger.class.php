@@ -17,12 +17,12 @@
  */
 
 /**
- * 	\file		core/triggers/interface_99_modMyodule_massactionpdftrigger.class.php
- * 	\ingroup	massactionpdf
+ * 	\file		core/triggers/interface_99_modMyodule_massactiontrigger.class.php
+ * 	\ingroup	massaction
  * 	\brief		Sample trigger
  * 	\remarks	You can create other triggers by copying this one
  * 				- File name should be either:
- * 					interface_99_modMassactionpdf_Mytrigger.class.php
+ * 					interface_99_modMassaction_Mytrigger.class.php
  * 					interface_99_all_Mytrigger.class.php
  * 				- The file must stay in core/triggers
  * 				- The class name must be InterfaceMytrigger
@@ -33,7 +33,7 @@
 /**
  * Trigger class
  */
-class Interfacemassactionpdftrigger
+class Interfacemassactiontrigger
 {
 
     private $db;
@@ -54,7 +54,7 @@ class Interfacemassactionpdftrigger
             . "They are provided for tutorial purpose only.";
         // 'development', 'experimental', 'dolibarr' or version
         $this->version = 'development';
-        $this->picto = 'massactionpdf@massactionpdf';
+        $this->picto = 'massaction@massaction';
     }
 
     /**
@@ -98,8 +98,8 @@ class Interfacemassactionpdftrigger
             return $langs->trans("Unknown");
         }
     }
-	
-	
+
+
 	/**
 	 * Function called when a Dolibarrr business event is done.
 	 * All functions "run_trigger" are triggered if file is inside directory htdocs/core/triggers
@@ -115,8 +115,8 @@ class Interfacemassactionpdftrigger
 		//For 8.0 remove warning
 		$result=$this->run_trigger($action, $object, $user, $langs, $conf);
 		return $result;
-	}	
-		
+	}
+
 
     /**
      * Function called when a Dolibarrr business event is done.

@@ -17,16 +17,16 @@
  */
 
 /**
- * \file    class/actions_massactionpdf.class.php
- * \ingroup massactionpdf
+ * \file    class/actions_massaction.class.php
+ * \ingroup massaction
  * \brief   This file is an example hook overload class file
  *          Put some comments here
  */
 
 /**
- * Class Actionsmassactionpdf
+ * Class Actionsmassaction
  */
-class Actionsmassactionpdf
+class Actionsmassaction
 {
     /**
      * @var array Hook results. Propagated to $hookmanager->resArray for later reuse
@@ -70,17 +70,17 @@ class Actionsmassactionpdf
         //print_r($parameters); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massactionpdf@massactionpdf');
+            $langs->load('massaction@massaction');
 
             // @TODO Ask for compression format and filename
             /*if($massaction == 'generate_zip')
             {
                 $form = new Form($db);
                 $formquestion = array(
-                    array('type' => 'other','name' => 'compression_mode','label' => $langs->trans('MassActionPDFGenerateZIPOptionsText'),'value' => $this->selectCompression())
+                    array('type' => 'other','name' => 'compression_mode','label' => $langs->trans('MassActionGenerateZIPOptionsText'),'value' => $this->selectCompression())
                 );
-                $text = $langs->trans('MassActionPDFGenerateZIPOptionsText');
-                $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?massaction=confirm_generate_zip', $langs->trans('MassActionPDFGenerateZIPOptions'), $text, 'confirm_generate_zip', $formquestion, "yes", 2);
+                $text = $langs->trans('MassActionGenerateZIPOptionsText');
+                $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?massaction=confirm_generate_zip', $langs->trans('MassActionGenerateZIPOptions'), $text, 'confirm_generate_zip', $formquestion, "yes", 2);
                 $this->resprints = $formconfirm;
             }*/
 
@@ -149,7 +149,7 @@ class Actionsmassactionpdf
                             readfile($diroutputmassaction.'/'.$filename);
                         }
                         else {
-                            setEventMessage($langs->trans('MassActionPDFZIPGenerated', count($toarchive)));
+                            setEventMessage($langs->trans('MassActionZIPGenerated', count($toarchive)));
                         }
                     }
                     else{
@@ -182,7 +182,7 @@ class Actionsmassactionpdf
     public function addMoreMassActions($parameters, &$object, &$action, $hookmanager)
     {
         global $conf, $user, $langs;
-        $langs->load('massactionpdf@massactionpdf');
+        $langs->load('massaction@massaction');
 
         $error = 0; // Error counter
 
@@ -191,11 +191,11 @@ class Actionsmassactionpdf
         //print_r($parameters); print_r($object); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)		// do something only for the context 'somecontext1' or 'somecontext2'
         {
-            $langs->load('massactionpdf@massactionpdf');
+            $langs->load('massaction@massaction');
             $disabled = false;
-            $this->resprints = '<option value="generate_zip"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionPDFGenerateZIP").'</option>';
+            $this->resprints = '<option value="generate_zip"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGenerateZIP").'</option>';
             //$disabled = false;
-            //$this->resprints.= '<option value="generate_pdf"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionPDFGeneratePDF").'</option>';
+            //$this->resprints.= '<option value="generate_pdf"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGeneratePDF").'</option>';
         }
 
         if (in_array('supplierinvoicelist', $TContext))

@@ -28,9 +28,9 @@ global $db,$user;
 $langs = $GLOBALS['langs'];
 $linkedObjectBlock = $GLOBALS['linkedObjectBlock'];
 
-$langs->load("massactionpdf@massactionpdf");
+$langs->load("massaction@massaction");
 echo '<br>';
-print_titre($langs->trans("massactionpdfRelated"));
+print_titre($langs->trans("massactionRelated"));
 ?>
 <table class="noborder allwidth">
 <tr class="liste_titre">

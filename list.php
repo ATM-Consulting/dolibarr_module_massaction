@@ -1,21 +1,21 @@
 <?php
 
 require 'config.php';
-dol_include_once('/massactionpdf/class/massactionpdf.class.php');
+dol_include_once('/massaction/class/massaction.class.php');
 
-if(empty($user->rights->massactionpdf->read)) accessforbidden();
+if(empty($user->rights->massaction->read)) accessforbidden();
 
 $langs->load('abricot@abricot');
-$langs->load('massactionpdf@massactionpdf');
+$langs->load('massaction@massaction');
 
 
 $massaction = GETPOST('massaction', 'alpha');
 $confirmmassaction = GETPOST('confirmmassaction', 'alpha');
 $toselect = GETPOST('toselect', 'array');
 
-$object = new massactionpdf($db);
+$object = new massaction($db);
 
-$hookmanager->initHooks(array('massactionpdflist'));
+$hookmanager->initHooks(array('massactionlist'));
 
 /*
  * Actions
@@ -33,7 +33,7 @@ if (!GETPOST('confirmmassaction', 'alpha') && $massaction != 'presend' && $massa
 
 if (empty($reshook))
 {
-	// do action from GETPOST ... 
+	// do action from GETPOST ...
 }
 
 
@@ -41,26 +41,26 @@ if (empty($reshook))
  * View
  */
 
-llxHeader('',$langs->trans('massactionpdfList'),'','');
+llxHeader('',$langs->trans('massactionList'),'','');
 
 //$type = GETPOST('type');
-//if (empty($user->rights->massactionpdf->all->read)) $type = 'mine';
+//if (empty($user->rights->massaction->all->read)) $type = 'mine';
 
 // TODO ajouter les champs de son objet que l'on souhaite afficher
 $sql = 'SELECT t.rowid, t.ref, t.label, t.date_creation, t.tms, \'\' AS action';
 
-$sql.= ' FROM '.MAIN_DB_PREFIX.'massactionpdf t ';
+$sql.= ' FROM '.MAIN_DB_PREFIX.'massaction t ';
 
 $sql.= ' WHERE 1=1';
-//$sql.= ' AND t.entity IN ('.getEntity('massactionpdf', 1).')';
+//$sql.= ' AND t.entity IN ('.getEntity('massaction', 1).')';
 //if ($type == 'mine') $sql.= ' AND t.fk_user = '.$user->id;
 
 
-$formcore = new TFormCore($_SERVER['PHP_SELF'], 'form_list_massactionpdf', 'GET');
+$formcore = new TFormCore($_SERVER['PHP_SELF'], 'form_list_massaction', 'GET');
 
 $nbLine = !empty($user->conf->MAIN_SIZE_LISTE_LIMIT) ? $user->conf->MAIN_SIZE_LISTE_LIMIT : $conf->global->MAIN_SIZE_LISTE_LIMIT;
 
-$r = new Listview($db, 'massactionpdf');
+$r = new Listview($db, 'massaction');
 echo $r->render($sql, array(
 	'view_type' => 'list', // default = [list], [raw], [chart]
     ,'allow-fields-select' => true,
@@ -78,19 +78,19 @@ echo $r->render($sql, array(
 		,'tms' => array('search_type' => 'calendars', 'allow_is_null' => false)
 		,'ref' => array('search_type' => true, 'table' => 't', 'field' => 'ref')
 		,'label' => array('search_type' => true, 'table' => array('t', 't'), 'field' => array('label')) // input text de recherche sur plusieurs champs
-		,'status' => array('search_type' => massactionpdf::$TStatus, 'to_translate' => true) // select html, la clé = le status de l'objet, 'to_translate' à true si nécessaire
+		,'status' => array('search_type' => massaction::$TStatus, 'to_translate' => true) // select html, la clé = le status de l'objet, 'to_translate' à true si nécessaire
 	)
 	,'translate' => array()
 	,'hide' => array(
 		'rowid' // important : rowid doit exister dans la query sql pour les checkbox de massaction
 	)
 	,'list' => array(
-		'title' => $langs->trans('massactionpdfList')
+		'title' => $langs->trans('massactionList')
 		,'image' => 'title_generic.png'
 		,'picto_precedent' => '<'
 		,'picto_suivant' => '>'
 		,'noheader' => 0
-		,'messageNothing' => $langs->trans('Nomassactionpdf')
+		,'messageNothing' => $langs->trans('Nomassaction')
 		,'picto_search' => img_picto('','search.png', '', 0)
         ,'massactions'=>array(
             'yourmassactioncode'  => $langs->trans('YourMassActionLabel')
@@ -126,7 +126,7 @@ function _getObjectNomUrl($ref)
 {
 	global $db;
 
-	$o = new massactionpdf($db);
+	$o = new massaction($db);
 	$res = $o->load('', $ref);
 	if ($res > 0)
 	{

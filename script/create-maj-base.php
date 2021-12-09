@@ -15,8 +15,8 @@ if(!defined('INC_FROM_DOLIBARR')) {
 /* uncomment
 
 
-dol_include_once('/massactionpdf/class/massactionpdf.class.php');
+dol_include_once('/massaction/class/massaction.class.php');
 
-$o=new massactionpdf($db);
+$o=new massaction($db);
 $o->init_db_by_vars();
 */
