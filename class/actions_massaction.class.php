@@ -51,6 +51,65 @@ class Actionsmassaction
         $this->db = $db;
     }
 
+	public function doPreMassActions($parameters, &$object, &$action, $hookmanager){
+
+		global $massaction, $langs;
+
+		$TContext = explode(":", $parameters['context']);
+
+		if(in_array('thirdpartylist', $TContext)
+			|| in_array('contactlist', $TContext)
+			|| in_array('memberlist', $TContext)
+			|| in_array('userlist', $TContext)) {
+
+			//Selection du mailing concerné
+			if ($massaction == 'linktomailing') {
+
+				$TMailings = array();
+				$toprint = '';
+
+				$toprint .= dol_get_fiche_head(null, '', '');
+				$toprint .= '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
+				$toprint .= '<input type="hidden" name="token" value="'.newToken().'">';
+				$toprint .= '<input type="hidden" name="massaction" value="confirm_linktomailing">';
+				$toprint .= '<table class="noborder centpercent">';
+				$toprint .= '<tr>';
+				$toprint .= '<td>'.$langs->trans('MassActionSelectEmailing').'</td>';
+
+				$form = new Form($this->db);
+
+				//selection de tous les mailings au statut brouillon, soit 0
+				$sql = "SELECT rowid, titre";
+				$sql .= " FROM ".MAIN_DB_PREFIX."mailing";
+				$sql .= " WHERE statut = 0";
+
+				$resql = $this->db->query($sql);
+
+				if($resql){
+					while($obj = $this->db->fetch_object($resql)){
+						$TMailings[$obj->rowid] = $obj->titre;
+					}
+				}
+
+				$toprint .= '<td>';
+				$toprint .= $form->selectarray('select_mailings', $TMailings);
+				$toprint .= '</td>';
+				$toprint .= '<td>';
+				$toprint .= '<input type="submit" class="button" name="bouton" value="'.$langs->trans('Link').'">';
+				$toprint .= '</td>';
+				$toprint .= '</tr>';
+				$toprint .= '</table>';
+				$toprint .= '</form>';
+
+				$toprint .= dol_get_fiche_end();
+
+				$this->resprints = $toprint;
+
+			}
+		}
+
+	}
+
     /**
      * Overloading the doActions function : replacing the parent's function with the one below
      *
