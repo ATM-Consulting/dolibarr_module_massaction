@@ -22,6 +22,13 @@
  * \brief   This file is an example hook overload class file
  *          Put some comments here
  */
+require_once DOL_DOCUMENT_ROOT.'/core/modules/mailings/thirdparties.modules.php';
+
+require_once DOL_DOCUMENT_ROOT.'/core/modules/mailings/modules_mailings.php';
+require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 
 /**
  * Class Actionsmassaction
@@ -67,6 +74,7 @@ class Actionsmassaction
 
 				$TMailings = array();
 				$toprint = '';
+				$_SESSION['toselect'] = $parameters['toselect'];
 
 				$toprint .= dol_get_fiche_head(null, '', '');
 				$toprint .= '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
@@ -104,7 +112,6 @@ class Actionsmassaction
 				$toprint .= dol_get_fiche_end();
 
 				$this->resprints = $toprint;
-
 			}
 		}
 
@@ -124,7 +131,11 @@ class Actionsmassaction
         require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
         global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
 
-        $error = 0; // Error counter
+		if(empty($massaction) && GETPOSTISSET('massaction')) $massaction = GETPOST('massaction', 'alphanohtml');
+
+		$TContext = explode(":", $parameters['context']);
+
+		$error = 0; // Error counter
 
         //print_r($parameters); echo "action: " . $action;
         if (strpos($parameters['context'], 'list') !== 0)
@@ -218,6 +229,39 @@ class Actionsmassaction
                 }
             }
         }
+
+
+		if(in_array('thirdpartylist', $TContext)
+			|| in_array('contactlist', $TContext)
+			|| in_array('memberlist', $TContext)
+			|| in_array('userlist', $TContext)) {
+
+			if($massaction == 'confirm_linktomailing'){
+
+				$mailing_selected = GETPOST('select_mailings', 'int');
+
+				if(!empty($mailing_selected)){
+
+					if($object->element == 'societe') $classname = "mailing_thirdparties";
+
+					$TCibles = array();
+					$obj = new $object->element($this->db);
+
+					foreach($_SESSION['toselect'] as $toselect){
+						$res = $obj->fetch($toselect);
+						if($res) {
+							$TCibles[$obj->id]['id'] = $obj->id;
+							$TCibles[$obj->id]['email'] = $obj->email;
+						}
+					}
+
+					$obj = new $classname($this->db);
+					$res = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
+
+				}
+			}
+
+		}
 
         if (! $error) {
             /*$this->results = array('myreturn' => 999);
