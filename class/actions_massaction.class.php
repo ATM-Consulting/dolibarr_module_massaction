@@ -204,7 +204,14 @@ class Actionsmassaction
 			$this->resprints .= '<option value="presend"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("SendByMail").'</option>';
 		}
 
-        if (! $error) {
+		if(in_array('thirdpartylist', $TContext)
+			|| in_array('contactlist', $TContext)
+			|| in_array('memberlist', $TContext)
+			|| in_array('userlist', $TContext)) {
+
+			$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . '>' . $langs->trans("MassActionLinktoMailing") . '</option>';
+		}
+		if (! $error) {
             return 0; // or return 1 to replace standard code
         } else {
             $this->errors[] = 'Error message';

@@ -42,6 +42,7 @@ MassActionAboutPage = Page à propos de Actions en masse
 massactionSetup=Page de configuration Massaction
 MassActionGenerateZIP=Générer une archive des documents
 MassActionZIPGenerated=Fichier archive généré, %s fichiers ajoutés
+MassActionLinktoMailing=Mailing : ajouter destinataires
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
 NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération
