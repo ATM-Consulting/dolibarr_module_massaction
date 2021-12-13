@@ -29,6 +29,8 @@ require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/custom/massaction/lib/massaction.lib.php';
+
 
 /**
  * Class Actionsmassaction
@@ -242,22 +244,27 @@ class Actionsmassaction
 
 				if(!empty($mailing_selected)){
 
-					if($object->element == 'societe') $classname = "mailing_thirdparties";
-
 					$TCibles = array();
-					$obj = new $object->element($this->db);
+					if($object->element == "member")  $obj = new $object->table_element($this->db);
+					else $obj = new $object->element($this->db);
 
 					foreach($_SESSION['toselect'] as $toselect){
 						$res = $obj->fetch($toselect);
 						if($res) {
 							$TCibles[$obj->id]['id'] = $obj->id;
 							$TCibles[$obj->id]['email'] = $obj->email;
+							if(!empty($obj->lastname)) $TCibles[$obj->id]['lastname'] = $obj->lastname;
+							if(!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
+							$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
 						}
 					}
 
-					$obj = new $classname($this->db);
+					$obj = new MailingTargets($this->db);
 					$res = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
-
+					if($res < 0) {
+						$error++;
+						$this->errors[] = $langs->trans("MassActionTargetsError");
+					}
 				}
 			}
 

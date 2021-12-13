@@ -55,3 +55,22 @@ function massactionAdminPrepareHead()
     return $head;
 }
 
+/**
+ * Retourne l'URL à donner pour ajouter un destinataire dans un mailing suivant le type de l'objet
+ *
+ * @param string $elementtype
+ * @param object $object
+ *
+ * @return string
+ *
+ */
+function getUrlToMailingCibles($elementtype, $object){
+
+	$urltoreturn = '';
+
+	if($elementtype == "member") $urltoreturn = $object->getNomURL(0, 0, 'card', '', '', -1, -1);
+	if($elementtype == "contact") $urltoreturn = $object->getNomURL(0, '', 0, '', -1, -1);
+	else $urltoreturn = $object->getNomURL(0, '', 0, -1);
+
+	return $urltoreturn;
+}
