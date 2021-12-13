@@ -54,3 +54,8 @@ MyPageName = My page name
 #
 MyWidget = My widget
 MyWidgetDescription = My widget description
+
+MassActionSelectEmailing=Select a mailing
+MassActionLinkToMailing=Add recipients
+MassActionTargetsError=Error adding recipients
+

@@ -105,7 +105,7 @@ class Actionsmassaction
 				$toprint .= $form->selectarray('select_mailings', $TMailings);
 				$toprint .= '</td>';
 				$toprint .= '<td>';
-				$toprint .= '<input type="submit" class="button" name="bouton" value="'.$langs->trans('Link').'">';
+				$toprint .= '<input type="submit" class="button" name="bouton" value="'.$langs->trans('MassActionLinkToMailing').'">';
 				$toprint .= '</td>';
 				$toprint .= '</tr>';
 				$toprint .= '</table>';
