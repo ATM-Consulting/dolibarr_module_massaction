@@ -248,29 +248,33 @@ class Actionsmassaction
 					if($object->element == "member")  $obj = new $object->table_element($this->db);
 					else $obj = new $object->element($this->db);
 
-					foreach($_SESSION['toselect'] as $toselect){
-						$res = $obj->fetch($toselect);
-						if($res) {
-							$TCibles[$obj->id]['id'] = $obj->id;
-							$TCibles[$obj->id]['email'] = $obj->email;
-							if(!empty($obj->lastname)) $TCibles[$obj->id]['lastname'] = $obj->lastname;
-							if(!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
-							$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
+					if(!empty($_SESSION['toselect'])){
+						foreach($_SESSION['toselect'] as $toselect) {
+							$res = $obj->fetch($toselect);
+							if ($res) {
+								$TCibles[$obj->id]['id'] = $obj->id;
+								$TCibles[$obj->id]['email'] = $obj->email;
+								if (!empty($obj->lastname)) $TCibles[$obj->id]['lastname'] = $obj->lastname;
+								if (!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
+								$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
+							}
 						}
 					}
 
 					$obj = new MailingTargets($this->db);
-					$res = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
-					if($res < 0) {
+					$nbtargetadded = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
+					if($nbtargetadded < 0) {
 						$error++;
 						$this->errors[] = $langs->trans("MassActionTargetsError");
-					} elseif($res >0) {
+					} else {
 						$mailing= new Mailing($this->db);
-						$mailing->fetch($mailing_selected);
-						$url_mailing = $mailing->getNomURL(0);
-
-						if(!empty($res)) setEventMessage($langs->trans('MassActionNbRecipientsAdded', $res) . ' ' . $url_mailing);
-						else setEventMessage($langs->trans('MassActionNbRecipientsAdded', $res));
+						$res = $mailing->fetch($mailing_selected);
+						if($res >0) {
+							$url_mailing = $mailing->getNomURL(0);
+							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $url_mailing);
+						} else {
+							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $mailing_selected);
+						}
 					}
 				}
 			}
