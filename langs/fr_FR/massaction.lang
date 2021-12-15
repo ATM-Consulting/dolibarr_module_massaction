@@ -46,6 +46,7 @@ MassActionLinktoMailing=Mailing : ajouter destinataires
 MassActionSelectEmailing=Sélectionner un mailing
 MassActionTargetsError=Erreur lors de l'ajout des destinataires
 MassActionLinkToMailing=Ajouter destinataires
+MassActionNbRecipientsAdded=%s destinataires ajoutés au mailing
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
 NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération

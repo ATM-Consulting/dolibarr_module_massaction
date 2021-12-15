@@ -264,6 +264,13 @@ class Actionsmassaction
 					if($res < 0) {
 						$error++;
 						$this->errors[] = $langs->trans("MassActionTargetsError");
+					} elseif($res >0) {
+						$mailing= new Mailing($this->db);
+						$mailing->fetch($mailing_selected);
+						$url_mailing = $mailing->getNomURL(0);
+
+						if(!empty($res)) setEventMessage($langs->trans('MassActionNbRecipientsAdded', $res) . ' ' . $url_mailing);
+						else setEventMessage($langs->trans('MassActionNbRecipientsAdded', $res));
 					}
 				}
 			}
@@ -271,8 +278,8 @@ class Actionsmassaction
 		}
 
         if (! $error) {
-            /*$this->results = array('myreturn' => 999);
-            $this->resprints = 'A text to show';*/
+			/*$this->results = array('myreturn' => 999);
+			$this->resprints = 'A text to show';*/
             return 0; // or return 1 to replace standard code
         } else {
             $this->errors[] = $errormsg;
