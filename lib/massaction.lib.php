@@ -67,9 +67,8 @@ function massactionAdminPrepareHead()
 function getUrlToMailingCibles($elementtype, $object){
 
 	$urltoreturn = '';
-
-	if($elementtype == "member") $urltoreturn = $object->getNomURL(0, 0, 'card', '', '', -1, -1);
-	if($elementtype == "contact") $urltoreturn = $object->getNomURL(0, '', 0, '', -1, -1);
+	if($elementtype == "member") $urltoreturn = $object->getNomURL(0, 0, '', '', '', 0, 1);
+	elseif($elementtype == "contact") $urltoreturn = $object->getNomURL(0, '', 0, '', -1, -1);
 	else $urltoreturn = $object->getNomURL(0, '', 0, -1);
 
 	return $urltoreturn;

@@ -245,7 +245,7 @@ class Actionsmassaction
 				if(!empty($mailing_selected)){
 
 					$TCibles = array();
-					if($object->element == "member")  $obj = new $object->table_element($this->db);
+					if($object->element == "member")  $obj = new Adherent($this->db);
 					else $obj = new $object->element($this->db);
 
 					if(!empty($_SESSION['toselect'])){
@@ -260,7 +260,6 @@ class Actionsmassaction
 							}
 						}
 					}
-
 					$obj = new MailingTargets($this->db);
 					$nbtargetadded = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
 					if($nbtargetadded < 0) {
