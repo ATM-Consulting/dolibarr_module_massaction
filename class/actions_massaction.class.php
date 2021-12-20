@@ -333,7 +333,8 @@ class Actionsmassaction
 						$res = $societe->setSalesRep($salesperson_id, ($salesperson_option == 0) ? true : false);
 						if($res < 0) $error++;
 						else {
-							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
+							$url_societe = $societe->getNomURL(0);			//lien du mailing concerné
+							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess') . ' : ' . $url_societe);
 						}
 					} else {
 						$error++;
