@@ -78,15 +78,8 @@ class Actionsmassaction
 				$toprint = '';
 				$_SESSION['toselect'] = $parameters['toselect'];
 
-				$toprint .= dol_get_fiche_head(null, '', '');
-				$toprint .= '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
-				$toprint .= '<input type="hidden" name="token" value="'.newToken().'">';
-				$toprint .= '<input type="hidden" name="massaction" value="confirm_linktomailing">';
-				$toprint .= '<table class="noborder centpercent">';
-				$toprint .= '<tr>';
-				$toprint .= '<td>'.$langs->trans('MassActionSelectEmailing').'</td>';
 
-				$form = new Form($this->db);
+				$toprint .= dol_get_fiche_head(null, '', '');
 
 				//selection de tous les mailings au statut brouillon, soit 0
 				$sql = "SELECT rowid, titre";
@@ -101,15 +94,17 @@ class Actionsmassaction
 					}
 				}
 
-				$toprint .= '<td>';
-				$toprint .= $form->selectarray('select_mailings', $TMailings);
-				$toprint .= '</td>';
-				$toprint .= '<td>';
-				$toprint .= '<input type="submit" class="button" name="bouton" value="'.$langs->trans('MassActionLinkToMailing').'">';
-				$toprint .= '</td>';
-				$toprint .= '</tr>';
-				$toprint .= '</table>';
-				$toprint .= '</form>';
+				//définition du form de confirmation
+				$formquestion = array();
+
+				$formquestion[]=array('type' => 'select',
+					'name' => 'select_mailings',
+					'label' => '',
+					'select_show_empty' => 0,
+					'values' => $TMailings);
+
+				$form = new Form($this->db);
+				$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionSelectEmailing"), $langs->trans("ConfirmSelectEmailing"), "confirm_linktomailing", $formquestion, 1, 0, 200, 500, 1);
 
 				$toprint .= dol_get_fiche_end();
 
@@ -238,9 +233,11 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if($massaction == 'confirm_linktomailing'){
 
-				$mailing_selected = GETPOST('select_mailings', 'int');
+			$confirm = GETPOST('confirm');
+			$mailing_selected = GETPOST('select_mailings', 'int');
+
+			if($action == 'confirm_linktomailing' && $confirm == 'yes'){
 
 				if(!empty($mailing_selected)){
 

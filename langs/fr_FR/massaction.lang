@@ -45,6 +45,7 @@ MassActionZIPGenerated=Fichier archive généré, %s fichiers ajoutés
 MassActionLinktoMailing=Mailing : ajouter destinataires
 MassActionSelectEmailing=Sélectionner un mailing
 MassActionTargetsError=Erreur lors de l'ajout des destinataires
+ConfirmSelectEmailing=Êtes-vous sûr de vouloir ajouter ces destinataires au mailing sélectionné ?
 MassActionLinkToMailing=Ajouter destinataires
 MassActionNbRecipientsAdded=%s destinataires ajoutés au mailing
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
