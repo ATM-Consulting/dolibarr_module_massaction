@@ -329,7 +329,8 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . '>' . $langs->trans("MassActionLinktoMailing") . '</option>';
+			$label = '<span class="fa fa-envelope-o" style=""></span> '. $langs->trans("MassActionLinktoMailing");
+			$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="'.dol_escape_htmltag($label).'">' . $label . '</option>';
 		}
 		if (! $error) {
             return 0; // or return 1 to replace standard code
