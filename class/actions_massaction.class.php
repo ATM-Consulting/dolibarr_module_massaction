@@ -113,7 +113,7 @@ class Actionsmassaction
 			} elseif ($massaction == 'linksalesperson'){
 
 				$user = new User($this->db);
-				$res = $user->fetchAll();
+				$res = $user->fetchAll('', '', 0, 0, array('t.statut' => 1));
 				$TUsers = array();
 				if($res) {
 					foreach($user->users as $user){
