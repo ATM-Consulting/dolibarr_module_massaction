@@ -71,11 +71,12 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
+			$toprint = '';
+
 			//Selection du mailing concerné
 			if ($massaction == 'linktomailing') {
 
 				$TMailings = array();
-				$toprint = '';
 				$_SESSION['toselect'] = $parameters['toselect'];
 
 
@@ -109,6 +110,45 @@ class Actionsmassaction
 				$toprint .= dol_get_fiche_end();
 
 				$this->resprints = $toprint;
+			} elseif ($massaction == 'linksalesperson'){
+
+				$user = new User($this->db);
+				$res = $user->fetchAll();
+				$TUsers = array();
+				if($res) {
+					foreach($user->users as $user){
+						$TUsers[$user->id] = $user->firstname . ' ' . $user->lastname . ' (' . $user->login . ')';
+					}
+
+				}
+
+				if(!empty($TUsers)){
+
+					$toprint .= dol_get_fiche_head(null, '', '');
+
+					//définition du form de confirmation
+					$formquestion = array();
+
+					$formquestion[]=array('type' => 'select',
+						'name' => 'select_salesperson',
+						'label' => '',
+						'select_show_empty' => 0,
+						'values' => $TUsers);
+
+					$formquestion[]=array('type' => 'select',
+						'name' => 'select_salesperson_option',
+						'label' => $langs->trans('MassActionSalesPersonAction'),
+						'select_show_empty' => 0,
+						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace')));
+
+					$form = new Form($this->db);
+					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionSelectSalesPerson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 1, 0, 200, 500, 1);
+
+					$toprint .= dol_get_fiche_end();
+
+					$this->resprints = $toprint;
+
+				}
 			}
 		}
 
@@ -233,7 +273,6 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-
 			$confirm = GETPOST('confirm', 'alphanohtml');
 			$mailing_selected = GETPOST('select_mailings', 'int');
 
@@ -279,6 +318,30 @@ class Actionsmassaction
 						}
 					}
 				}
+			} elseif ($action == 'confirm_linksalesperson' && $confirm == 'yes'){
+
+				$toselect = GETPOST('toselect', 'array');
+				$salesperson_id = GETPOST('select_salesperson', 'int');
+				$salesperson_option = GETPOST('select_salesperson_option', 'int');
+
+				$societe = new Societe($this->db);
+
+				foreach($toselect as $thirdparty_id){
+
+					$res = $societe->fetch($thirdparty_id);
+					if($res){
+						$res = $societe->setSalesRep($salesperson_id, ($salesperson_option == 0) ? true : false);
+						if($res < 0) $error++;
+						else {
+							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
+						}
+					} else {
+						$error++;
+					}
+
+				}
+
+
 			}
 
 		}
@@ -335,7 +398,16 @@ class Actionsmassaction
 			if ($conf->mailing->enabled) {
 				//options "Mailing : ajouter destinataires"
 				$label = '<span class="fa fa-envelope-o" style=""></span> ' . $langs->trans("MassActionLinktoMailing");
-				$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
+				$this->resprints .= '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
+
+			}
+		}
+		if(in_array('thirdpartylist', $TContext)){
+
+			if ($conf->societe->enabled) {
+				//options "Mailing : ajouter destinataires"
+				$label = '<span class="fa fa-user" style=""></span> ' . $langs->trans("MassActionLinkSalesperson");
+				$this->resprints .= '<option value="linksalesperson"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 
 			}
 		}
