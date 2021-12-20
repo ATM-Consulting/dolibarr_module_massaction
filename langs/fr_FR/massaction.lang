@@ -55,6 +55,6 @@ SetupAutoDownloadTitle=Auto Download
 SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
 MassActionLinkSalesperson=Lier un commercial
 MassActionSalesPersonAction=Quelle action souhaitez-vous effectuer ?
-MassActionSelectSalesPerson=Sélectionnez un utilisateur
+MassActionSelectSalesPerson=Sélectionnez un commercial
 ConfirmSelectSalesPerson=Êtes-vous sûr de vouloir effectuer cette action ?
 MassActionReplace=Remplacer

@@ -60,7 +60,7 @@ MassActionLinkToMailing=Add recipients
 MassActionTargetsError=Error adding recipients
 ConfirmSelectEmailing=Are you sure you want to add these recipients to the selected mailing?
 MassActionLinkSalesperson=Bind a salesperson
-MassActionSelectSalesPerson=Select an user
+MassActionSelectSalesPerson=Select a sales person
 ConfirmSelectSalesPerson=Are you sure you want to take this action ?
 MassActionReplace=Replace
 
