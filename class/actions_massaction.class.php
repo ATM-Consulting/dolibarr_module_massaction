@@ -234,13 +234,14 @@ class Actionsmassaction
 			|| in_array('userlist', $TContext)) {
 
 
-			$confirm = GETPOST('confirm');
+			$confirm = GETPOST('confirm', 'alphanohtml');
 			$mailing_selected = GETPOST('select_mailings', 'int');
 
 			if($action == 'confirm_linktomailing' && $confirm == 'yes'){
 
 				if(!empty($mailing_selected)){
 
+					//on rassemble les informations dans un tableau "$TCibles" afin d'ajouter au mailing les nouveaux destinataires
 					$TCibles = array();
 					if($object->element == "member")  $obj = new Adherent($this->db);
 					else $obj = new $object->element($this->db);
@@ -257,16 +258,21 @@ class Actionsmassaction
 							}
 						}
 					}
-					$obj = new MailingTargets($this->db);
-					$nbtargetadded = $obj->addTargetsToDatabase($mailing_selected,$TCibles);
-					if($nbtargetadded < 0) {
+
+					//on ajoute les destinataires au mailing préalablement sélectionné
+					$mailingtargets = new MailingTargets($this->db);
+					$nbtargetadded = $mailingtargets->addTargetsToDatabase($mailing_selected,$TCibles);
+
+					if($nbtargetadded < 0) {			//erreur
 						$error++;
 						$this->errors[] = $langs->trans("MassActionTargetsError");
 					} else {
+
 						$mailing= new Mailing($this->db);
 						$res = $mailing->fetch($mailing_selected);
+
 						if($res >0) {
-							$url_mailing = $mailing->getNomURL(0);
+							$url_mailing = $mailing->getNomURL(0);			//lien du mailing concerné
 							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $url_mailing);
 						} else {
 							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $mailing_selected);
@@ -326,8 +332,12 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			$label = '<span class="fa fa-envelope-o" style=""></span> '. $langs->trans("MassActionLinktoMailing");
-			$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="'.dol_escape_htmltag($label).'">' . $label . '</option>';
+			if ($conf->mailing->enabled) {
+				//options "Mailing : ajouter destinataires"
+				$label = '<span class="fa fa-envelope-o" style=""></span> ' . $langs->trans("MassActionLinktoMailing");
+				$this->resprints = '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
+
+			}
 		}
 		if (! $error) {
             return 0; // or return 1 to replace standard code
