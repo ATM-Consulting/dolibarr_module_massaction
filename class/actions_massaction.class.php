@@ -254,7 +254,7 @@ class Actionsmassaction
 							if ($res) {
 								$TCibles[$obj->id]['id'] = $obj->id;
 								$TCibles[$obj->id]['email'] = $obj->email;
-								if (!empty($obj->lastname)) $TCibles[$obj->id]['lastname'] = $obj->lastname;
+								$TCibles[$obj->id]['lastname'] = (!empty($obj->lastname)) ? $obj->lastname : $obj->name;
 								if (!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
 								$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
 							}
