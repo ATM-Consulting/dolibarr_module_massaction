@@ -78,10 +78,8 @@ class Actionsmassaction
 
 				$TMailings = array();
 				$toprint = '';
+
 				$_SESSION['toselect'] = $parameters['toselect'];
-
-
-				$toprint .= dol_get_fiche_head(null, '', '');
 
 				//selection de tous les mailings au statut brouillon, soit 0
 				$sql = "SELECT rowid, titre";
@@ -108,19 +106,19 @@ class Actionsmassaction
 				$form = new Form($this->db);
 				$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionSelectEmailing"), $langs->trans("ConfirmSelectEmailing"), "confirm_linktomailing", $formquestion, 1, 0, 200, 500, 1);
 
-				$toprint .= dol_get_fiche_end();
-
 				$this->resprints = $toprint;
+
 			} elseif ($massaction == 'linksalesperson'){
 
+				//on récupère la liste de tous les utilisateurs actifs que l'on pourra sélectionnés comme commerciaux
+				$TUsers = array();
 				$user = new User($this->db);
 				$res = $user->fetchAll('', '', 0, 0, array('t.statut' => 1));
-				$TUsers = array();
+
 				if($res) {
 					foreach($user->users as $user){
 						$TUsers[$user->id] = $user->firstname . ' ' . $user->lastname . ' (' . $user->login . ')';
 					}
-
 				}
 
 				if(!empty($TUsers)){
@@ -141,7 +139,6 @@ class Actionsmassaction
 						'select_show_empty' => 0,
 						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace'), 2 =>$langs->trans('MassActionDelete')));
 
-					$form = new Form($this->db);
 					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
 
 					$this->resprints = $toprint;
@@ -273,6 +270,7 @@ class Actionsmassaction
 
 			$confirm = GETPOST('confirm', 'alphanohtml');
 			$mailing_selected = GETPOST('select_mailings', 'int');
+			$toselect = GETPOST('toselect', 'array');
 
 			if($action == 'confirm_linktomailing' && $confirm == 'yes'){
 
@@ -283,9 +281,9 @@ class Actionsmassaction
 					if($object->element == "member")  $obj = new Adherent($this->db);
 					else $obj = new $object->element($this->db);
 
-					if(!empty($_SESSION['toselect'])){
-						foreach($_SESSION['toselect'] as $toselect) {
-							$res = $obj->fetch($toselect);
+					if(!empty($toselect)){
+						foreach($toselect as $element_id) {
+							$res = $obj->fetch($element_id);
 							if ($res) {
 								$TCibles[$obj->id]['id'] = $obj->id;
 								$TCibles[$obj->id]['email'] = $obj->email;
