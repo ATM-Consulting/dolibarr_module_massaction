@@ -77,6 +77,7 @@ class Actionsmassaction
 			if ($massaction == 'linktomailing') {
 
 				$TMailings = array();
+				$toprint = '';
 				$_SESSION['toselect'] = $parameters['toselect'];
 
 
@@ -404,7 +405,7 @@ class Actionsmassaction
 			if ($conf->mailing->enabled) {
 				//options "Mailing : ajouter destinataires"
 				$label = '<span class="fa fa-envelope-o" style=""></span> ' . $langs->trans("MassActionLinktoMailing");
-				$this->resprints .= '<option value="linktomailing"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
+				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 
 			}
 		}
