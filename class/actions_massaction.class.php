@@ -138,7 +138,7 @@ class Actionsmassaction
 						'name' => 'select_salesperson_option',
 						'label' => $langs->trans('MassActionSalesPersonAction'),
 						'select_show_empty' => 0,
-						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace')));
+						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace'), 2 =>$langs->trans('MassActionDelete')));
 
 					$form = new Form($this->db);
 					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
@@ -327,9 +327,17 @@ class Actionsmassaction
 
 					$res = $societe->fetch($thirdparty_id);
 					if($res){
-						$res = $societe->setSalesRep($TSalesPersonToLink, ($salesperson_option == 0) ? true : false);
-						if($res < 0) $error++;
-						else {
+						if($salesperson_option == 2){
+							foreach($TSalesPersonToLink as $id_salesperson){
+								$res = $societe->del_commercial($user, $id_salesperson);
+								if($res < 0) $error++;
+							}
+						} else {
+							$res = $societe->setSalesRep($TSalesPersonToLink, ($salesperson_option == 0) ? true : false);
+							if($res < 0) $error++;
+						}
+
+						if(!$error){
 							$url_societe = $societe->getNomURL(0);			//lien du mailing concerné
 							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess') . ' : ' . $url_societe);
 							header('Location:'.$_SERVER['PHP_SELF']);

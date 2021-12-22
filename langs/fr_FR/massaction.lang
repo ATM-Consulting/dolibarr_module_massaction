@@ -59,3 +59,4 @@ MassActionSelectSalesPerson=Sélectionnez un commercial
 ConfirmSelectSalesPerson=Êtes-vous sûr de vouloir effectuer cette action ?
 MassActionReplace=Remplacer
 MassActionLinkSalesPersonSuccess=Commercial mis à jour sur la fiche tiers
+MassActionDelete=Retirer

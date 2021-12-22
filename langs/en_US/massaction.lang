@@ -64,7 +64,7 @@ MassActionSelectSalesPerson=Select a sales person
 ConfirmSelectSalesPerson=Are you sure you want to take this action ?
 MassActionReplace=Replace
 MassActionLinkSalesPersonSuccess=Commercial updated on the third-party file
-
+MassActionDelete=Delete
 
 
 
