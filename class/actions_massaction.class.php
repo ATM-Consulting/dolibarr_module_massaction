@@ -124,16 +124,15 @@ class Actionsmassaction
 
 				if(!empty($TUsers)){
 
-					$toprint .= dol_get_fiche_head(null, '', '');
+					$form = new Form($this->db);
 
 					//définition du form de confirmation
 					$formquestion = array();
 
-					$formquestion[]=array('type' => 'select',
+					$formquestion[]=array('type' => 'other',
 						'name' => 'select_salesperson',
-						'label' => '',
-						'select_show_empty' => 0,
-						'values' => $TUsers);
+						'label' => $langs->trans("MassActionSelectSalesPerson"),
+						'value' => $form->multiselectarray('tsalespersontolink', $TUsers, GETPOST('tsalespersontolink', 'array'), null, null, null, null, '60%'));
 
 					$formquestion[]=array('type' => 'select',
 						'name' => 'select_salesperson_option',
@@ -142,9 +141,7 @@ class Actionsmassaction
 						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace')));
 
 					$form = new Form($this->db);
-					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionSelectSalesPerson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 1, 0, 200, 500, 1);
-
-					$toprint .= dol_get_fiche_end();
+					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
 
 					$this->resprints = $toprint;
 
@@ -321,7 +318,7 @@ class Actionsmassaction
 			} elseif ($action == 'confirm_linksalesperson' && $confirm == 'yes'){
 
 				$toselect = GETPOST('toselect', 'array');
-				$salesperson_id = GETPOST('select_salesperson', 'int');
+				$TSalesPersonToLink = GETPOST('tsalespersontolink', 'array');
 				$salesperson_option = GETPOST('select_salesperson_option', 'int');
 
 				$societe = new Societe($this->db);
@@ -330,11 +327,12 @@ class Actionsmassaction
 
 					$res = $societe->fetch($thirdparty_id);
 					if($res){
-						$res = $societe->setSalesRep($salesperson_id, ($salesperson_option == 0) ? true : false);
+						$res = $societe->setSalesRep($TSalesPersonToLink, ($salesperson_option == 0) ? true : false);
 						if($res < 0) $error++;
 						else {
 							$url_societe = $societe->getNomURL(0);			//lien du mailing concerné
 							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess') . ' : ' . $url_societe);
+							header('Location:'.$_SERVER['PHP_SELF']);
 						}
 					} else {
 						$error++;
@@ -344,7 +342,6 @@ class Actionsmassaction
 
 
 			}
-
 		}
 
         if (! $error) {
