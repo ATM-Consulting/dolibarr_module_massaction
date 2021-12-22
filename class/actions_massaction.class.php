@@ -136,7 +136,7 @@ class Actionsmassaction
 
 					$formquestion[]=array('type' => 'select',
 						'name' => 'select_salesperson_option',
-						'label' => $langs->trans('MassActionSalesPersonAction'),
+						'label' => $langs->trans('MassActionSalesPersonAction') . $form->textwithpicto('', $langs->trans('MassActionSalesPersonHelp'), 1, 'help', '', 0, 2, 'substittooltipfromtopic'),
 						'select_show_empty' => 0,
 						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace'), 2 =>$langs->trans('MassActionDelete')));
 

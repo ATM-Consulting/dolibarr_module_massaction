@@ -60,3 +60,5 @@ ConfirmSelectSalesPerson=Êtes-vous sûr de vouloir effectuer cette action ?
 MassActionReplace=Remplacer
 MassActionLinkSalesPersonSuccess=Commercial mis à jour sur la fiche tiers
 MassActionDelete=Retirer
+MassActionSalesPersonHelp=<b>Ajouter :</b> ajoutera les commerciaux sélectionnés ci-dessus aux tiers sélectionnés de la liste<br><br><b>Remplacer :</b> retirera tous les commerciaux associés aux tiers sélectionnés de la liste puis ajoutera le commercial sélectionné ci-dessus à la place<br><br><b>Retirer :</b> retirera les commerciaux sélectionné ci-dessus des tiers sélectionnés de la liste
+

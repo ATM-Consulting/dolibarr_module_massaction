@@ -65,6 +65,8 @@ ConfirmSelectSalesPerson=Are you sure you want to take this action ?
 MassActionReplace=Replace
 MassActionLinkSalesPersonSuccess=Commercial updated on the third-party file
 MassActionDelete=Delete
+MassActionSalesPersonHelp=<b>Add :</b> will add the sales representatives selected above to the third parties selected from the list<br><br><b>Replace :</b> will remove all sales representatives associated with the selected third parties from the list and then add the sales representative selected above instead<br><br><b>Retirer :</b> will remove the sales representatives selected above from the selected third parties from the list
+
 
 
 
