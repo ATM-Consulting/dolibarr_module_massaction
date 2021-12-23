@@ -23,13 +23,12 @@
  *          Put some comments here
  */
 require_once DOL_DOCUMENT_ROOT.'/core/modules/mailings/thirdparties.modules.php';
-
 require_once DOL_DOCUMENT_ROOT.'/core/modules/mailings/modules_mailings.php';
 require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/custom/massaction/lib/massaction.lib.php';
+require_once __DIR__.'/../lib/massaction.lib.php';
 
 
 /**
@@ -77,7 +76,6 @@ class Actionsmassaction
 			if ($massaction == 'linktomailing') {
 
 				$TMailings = array();
-				$toprint = '';
 
 				$_SESSION['toselect'] = $parameters['toselect'];
 
