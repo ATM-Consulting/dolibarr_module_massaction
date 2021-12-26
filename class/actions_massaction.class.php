@@ -377,43 +377,40 @@ class Actionsmassaction
 
 		$TContext = explode(":", $parameters['context']);
 
-        //print_r($parameters); print_r($object); echo "action: " . $action;
-        if (strpos($parameters['context'], 'list') !== 0)		// do something only for the context 'somecontext1' or 'somecontext2'
+		// Ajout de l'action en masse "Génération archive zip" sur les listes
+        if (strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massaction@massaction');
-            $disabled = false;
-            $this->resprints = '<option value="generate_zip"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGenerateZIP").'</option>';
-            //$disabled = false;
-            //$this->resprints.= '<option value="generate_pdf"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGeneratePDF").'</option>';
+			$label = '<span class="fa fa-file-archive paddingrightonly"></span> ' . $langs->trans("MassActionGenerateZIP");
+			$this->resprints = '<option value="generate_zip" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
         }
 
+		// Ajout de l'action en masse "Envoi par e-mail" sur la liste des factures fournisseur
         if (in_array('supplierinvoicelist', $TContext))
 		{
 			$disabled = false;
 			$this->resprints .= '<option value="presend"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("SendByMail").'</option>';
 		}
 
+		// Ajout de l'action en masse d'ajout de destinataires à un e-mailing
 		if(in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if ($conf->mailing->enabled) {
-				//options "Mailing : ajouter destinataires"
-				$label = '<span class="fa fa-envelope-o" style=""></span> ' . $langs->trans("MassActionLinktoMailing");
+			if ($conf->mailing->enabled && $user->rights->mailing->creer) {
+				$label = '<span class="fa fa-envelope-o paddingrightonly"></span> ' . $langs->trans("MassActionLinktoMailing");
 				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
-
 			}
 		}
+
+		// Ajout de l'action en masse d'affectation de commerciaux aux tiers
 		if(in_array('thirdpartylist', $TContext)){
-
-			if ($conf->societe->enabled) {
-				//options "Mailing : ajouter destinataires"
-				$label = '<span class="fa fa-user" style=""></span> ' . $langs->trans("MassActionLinkSalesperson");
-				$this->resprints .= '<option value="linksalesperson"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
-
+			if ($user->rights->societe->creer) {
+				$label = '<span class="fa fa-user paddingrightonly"></span> ' . $langs->trans("MassActionLinkSalesperson");
+				$this->resprints .= '<option value="linksalesperson" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}
 		}
+
 		if (! $error) {
             return 0; // or return 1 to replace standard code
         } else {
