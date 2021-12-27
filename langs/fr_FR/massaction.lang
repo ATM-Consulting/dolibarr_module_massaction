@@ -17,11 +17,10 @@
 # Générique
 #
 
-
 # Module label 'ModuleMassActionName'
-ModuleMassActionName = Actions en masse PDF
+ModuleMassActionName = Actions en masse
 # Module description 'ModuleMassActionDesc'
-ModuleMassActionDesc = Génération d'archives ZIP
+ModuleMassActionDesc = Ajout d'actions en masse sur les listes
 
 #
 # Page d'administration
@@ -39,26 +38,23 @@ About = À propos
 MassActionAbout = À propos de Actions en masse
 MassActionAboutPage = Page à propos de Actions en masse
 
-massactionSetup=Page de configuration Massaction
 MassActionGenerateZIP=Générer une archive des documents
 MassActionZIPGenerated=Fichier archive généré, %s fichiers ajoutés
-MassActionLinktoMailing=Mailing : ajouter destinataires
-MassActionSelectEmailing=Sélectionner un mailing
+MassActionLinktoMailing=Ajouter en destinataires d'un mailing
+MassActionSelectEmailing=Sélectionnez un mailing
 MassActionTargetsError=Erreur lors de l'ajout des destinataires
 ConfirmSelectEmailing=Êtes-vous sûr de vouloir ajouter ces destinataires au mailing sélectionné ?
-MassActionLinkToMailing=Ajouter destinataires
 MassActionNbRecipientsAdded=%s destinataires ajoutés au mailing
 NoFileToAddInArchive=Aucun fichier à ajouter dans l'archive
 NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération
-SetupAutoDownloadTitle=Auto Download
+SetupAutoDownloadTitle=Téléchargement direct
 SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
-MassActionLinkSalesperson=Affecter un commercial
+MassActionLinkSalesperson=Affecter des commerciaux
 MassActionSalesPersonAction=Quelle action souhaitez-vous effectuer ?
-MassActionSelectSalesPerson=Sélectionnez un commercial
-ConfirmSelectSalesPerson=Êtes-vous sûr de vouloir effectuer cette action ?
+MassActionSelectSalesPerson=Sélectionnez un ou plusieurs commerciaux
+ConfirmSelectSalesPerson=Êtes-vous sûr de vouloir affecter ces commerciaux au tiers sélectionnés ?
 MassActionReplace=Remplacer
-MassActionLinkSalesPersonSuccess=Commercial mis à jour sur la fiche tiers
+MassActionLinkSalesPersonSuccess=Commerciaux mis à jour sur les fiches tiers sélectionnées
 MassActionDelete=Retirer
-MassActionSalesPersonHelp=<b>Ajouter :</b> ajoutera les commerciaux sélectionnés ci-dessus aux tiers sélectionnés de la liste<br><br><b>Remplacer :</b> retirera tous les commerciaux associés aux tiers sélectionnés de la liste puis ajoutera le commercial sélectionné ci-dessus à la place<br><br><b>Retirer :</b> retirera les commerciaux sélectionné ci-dessus des tiers sélectionnés de la liste
-
+MassActionSalesPersonHelp=<b>Ajouter :</b> ajoutera les commerciaux sélectionnés ci-dessus aux tiers sélectionnés de la liste<br><br><b>Remplacer :</b> retirera tous les commerciaux associés aux tiers sélectionnés de la liste puis ajoutera les commerciaux sélectionnés ci-dessus à la place<br><br><b>Retirer :</b> retirera les commerciaux sélectionné ci-dessus des tiers sélectionnés de la liste

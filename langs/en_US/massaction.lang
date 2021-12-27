@@ -1,4 +1,3 @@
-
 # Copyright (C) 2019 Maxime Kohlhaas <maxime@m-development.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,57 +18,43 @@
 #
 
 # Module label 'ModuleMassActionName'
-ModuleMassActionName = MassAction
+ModuleMassActionName = Mass action
 # Module description 'ModuleMassActionDesc'
-ModuleMassActionDesc = MassAction description
+ModuleMassActionDesc = Add mass actions on lists
 
 #
 # Admin page
 #
-MassActionSetup = MassAction setup
+MassActionSetup = Mass action module setup
 Settings = Settings
-MassActionSetupPage = MassAction setup page
-MASSACTION_MYPARAM1 = My param 1
-MASSACTION_MYPARAM1Tooltip = My param 1 tooltip
-MASSACTION_MYPARAM2=My param 2
-MASSACTION_MYPARAM2Tooltip=My param 2 tooltip
-
-ATMAbout = This module has been developed by <a href="http://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>You can find the documentation on our <a href="http://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>For any question or feedback, contact us on <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>For any commercial question, contact us on <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> or at +33 9 77 19 50 70<br><br>Find our other modules on <a href="http://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
-
+MassActionSetupPage = Mass action module setup page
 
 #
 # About page
 #
+ATMAbout = This module has been developed by3 <a href="http://www.atm-consulting.fr" target="_blank">ATM Consulting</a><br>You can find the documentation on our <a href="http://wiki.atm-consulting.fr/index.php/Accueil" target="_blank">wiki</a><br><br>For any question or feedback, contact us on <a href="mailto:support@atm-consulting.fr">support@atm-consulting.fr</a><br><br>For any commercial question, contact us on <a href="mailto:contact@atm-consulting.fr">contact@atm-consulting.fr</a> or at +33 9 77 19 50 70<br><br>Find our other modules on <a href="http://www.dolistore.com/search.php?orderby=position&orderway=desc&search_query=atm&submit_search=Rechercher" target="_blank">Dolistore</a>
+
 About = About
-MassActionAbout = About MassAction
-MassActionAboutPage = MassAction about page
+MassActionAbout = About Mass action
+MassActionAboutPage = Mass action about page
 
-#
-# Sample page
-#
-MyPageName = My page name
-
-#
-# Sample widget
-#
-MyWidget = My widget
-MyWidgetDescription = My widget description
-
-MassActionSelectEmailing=Select a mailing
-MassActionLinkToMailing=Add recipients
-MassActionTargetsError=Error adding recipients
-ConfirmSelectEmailing=Are you sure you want to add these recipients to the selected mailing?
-MassActionLinkSalesperson=Assign a sales representative
-MassActionSelectSalesPerson=Select a sales person
-ConfirmSelectSalesPerson=Are you sure you want to take this action ?
+MassActionGenerateZIP=Generate a zip archive of the documents
+MassActionZIPGenerated=Zip archive generated, %s files added
+MassActionLinktoMailing=Add as mailing target
+MassActionSelectEmailing=Select mailing
+MassActionTargetsError=Error while adding as mailing target
+ConfirmSelectEmailing=Are you sure you want to add these targets to the selected mailing ?
+MassActionNbRecipientsAdded=%s targets added to the mailing
+NoFileToAddInArchive=No files to add in the archive
+NoDirectoryAvailable=Directory not available
+MassActionErrorGeneration=Generation error
+SetupAutoDownloadTitle=Auto Download
+SetupAutoDownloadDesc=Automatically download the generated zip archive
+MassActionLinkSalesperson=Add sales representatives
+MassActionSalesPersonAction=What action do you want to apply ?
+MassActionSelectSalesPerson=Select one or several sales representatives
+ConfirmSelectSalesPerson=Are you sure you want to add these sales representatives to the selected thirdparties ?
 MassActionReplace=Replace
-MassActionLinkSalesPersonSuccess=Commercial updated on the third-party file
-MassActionDelete=Delete
-MassActionSalesPersonHelp=<b>Add :</b> will add the sales representatives selected above to the third parties selected from the list<br><br><b>Replace :</b> will remove all sales representatives associated with the selected third parties from the list and then add the sales representative selected above instead<br><br><b>Retirer :</b> will remove the sales representatives selected above from the selected third parties from the list
-
-
-
-
-
-
-
+MassActionLinkSalesPersonSuccess=Sales representatives updated on selected thirdparties
+MassActionDelete=Remove
+MassActionSalesPersonHelp=<b>Add :</b> will add selected sales representatives to the selected thirdparties<br><br><b>Replace :</b> will remove all sales representatives linkes to selected thirdparties, then adds selected sales representatives instead<br><br><b>Remove :</b> will remove selected sales representatives from selected thirdparties

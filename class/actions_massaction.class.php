@@ -59,92 +59,77 @@ class Actionsmassaction
         $this->db = $db;
     }
 
-	public function doPreMassActions($parameters, &$object, &$action, $hookmanager){
-
-		global $massaction, $langs;
+	public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
+	{
+		global $conf, $user, $massaction, $langs;
 
 		$TContext = explode(":", $parameters['context']);
+		$toprint = '';
 
-		if(in_array('thirdpartylist', $TContext)
+		// Action en masse d'ajout de destinataires à un e-mailing, choix de l'e-mailing
+		if($massaction == 'linktomailing' && $conf->mailing->enabled && $user->rights->mailing->creer
+			&& (in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
-			|| in_array('userlist', $TContext)) {
-
-			$toprint = '';
-
+			|| in_array('userlist', $TContext)))
+		{
 			//Selection du mailing concerné
-			if ($massaction == 'linktomailing') {
+			$TMailings = array();
 
-				$TMailings = array();
+			// Récupération de tous les mailings au statut brouillon (0)
+			$sql = "SELECT rowid, titre";
+			$sql.= " FROM " . MAIN_DB_PREFIX . "mailing";
+			$sql.= " WHERE statut = 0";
 
-				$_SESSION['toselect'] = $parameters['toselect'];
+			$resql = $this->db->query($sql);
 
-				//selection de tous les mailings au statut brouillon, soit 0
-				$sql = "SELECT rowid, titre";
-				$sql .= " FROM ".MAIN_DB_PREFIX."mailing";
-				$sql .= " WHERE statut = 0";
-
-				$resql = $this->db->query($sql);
-
-				if($resql){
-					while($obj = $this->db->fetch_object($resql)){
-						$TMailings[$obj->rowid] = $obj->titre;
-					}
-				}
-
-				//définition du form de confirmation
-				$formquestion = array();
-
-				$formquestion[]=array('type' => 'select',
-					'name' => 'select_mailings',
-					'label' => '',
-					'select_show_empty' => 0,
-					'values' => $TMailings);
-
-				$form = new Form($this->db);
-				$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionSelectEmailing"), $langs->trans("ConfirmSelectEmailing"), "confirm_linktomailing", $formquestion, 1, 0, 200, 500, 1);
-
-				$this->resprints = $toprint;
-
-			} elseif ($massaction == 'linksalesperson'){
-
-				//on récupère la liste de tous les utilisateurs actifs que l'on pourra sélectionnés comme commerciaux
-				$TUsers = array();
-				$user = new User($this->db);
-				$res = $user->fetchAll('', '', 0, 0, array('t.statut' => 1));
-
-				if($res) {
-					foreach($user->users as $user){
-						$TUsers[$user->id] = $user->firstname . ' ' . $user->lastname . ' (' . $user->login . ')';
-					}
-				}
-
-				if(!empty($TUsers)){
-
-					$form = new Form($this->db);
-
-					//définition du form de confirmation
-					$formquestion = array();
-
-					$formquestion[]=array('type' => 'other',
-						'name' => 'select_salesperson',
-						'label' => $langs->trans("MassActionSelectSalesPerson"),
-						'value' => $form->multiselectarray('tsalespersontolink', $TUsers, GETPOST('tsalespersontolink', 'array'), null, null, null, null, '60%'));
-
-					$formquestion[]=array('type' => 'select',
-						'name' => 'select_salesperson_option',
-						'label' => $langs->trans('MassActionSalesPersonAction') . $form->textwithpicto('', $langs->trans('MassActionSalesPersonHelp'), 1, 'help', '', 0, 2, 'substittooltipfromtopic'),
-						'select_show_empty' => 0,
-						'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace'), 2 =>$langs->trans('MassActionDelete')));
-
-					$toprint .= $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
-
-					$this->resprints = $toprint;
-
+			if ($resql) {
+				while ($obj = $this->db->fetch_object($resql)) {
+					$TMailings[$obj->rowid] = $obj->rowid.' - '.$obj->titre;
 				}
 			}
+
+			// Question pour le choix de l'e-mailing
+			$formquestion[] = array(
+				'type' => 'select',
+				'name' => 'select_mailings',
+				'label' => $langs->trans('MassActionSelectEmailing'),
+				'select_show_empty' => 0,
+				'values' => $TMailings
+			);
+
+			$form = new Form($this->db);
+			$toprint = $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinktoMailing"), $langs->trans("ConfirmSelectEmailing"), "confirm_linktomailing", $formquestion, 0, 0, 200, 500, 1);
 		}
 
+		// Action en masse d'affectation de commerciaux aux tiers, choix des options
+		if($massaction == 'linksalesperson' && $user->rights->societe->creer
+			&& in_array('thirdpartylist', $TContext))
+		{
+			$form = new Form($this->db);
+			$userList = $form->select_dolusers('', 'select_salesperson', 1, '', 0, '', '', 0, 0, 0, '', 0, '', '', 0, 0, 1);
+
+			// Question pour le choix des utilisateurs
+			$formquestion[]=array(
+				'type' => 'other',
+				'name' => 'select_salesperson',
+				'label' => $langs->trans("MassActionSelectSalesPerson"),
+				'value' => $userList
+			);
+
+			// Question pour le choix de l'option d'affectation
+			$formquestion[]=array(
+				'type' => 'select',
+				'name' => 'select_salesperson_option',
+				'label' => $form->textwithpicto($langs->trans('MassActionSalesPersonAction'), $langs->trans('MassActionSalesPersonHelp'), 1, 'help', '', 0, 2, ''),
+				'select_show_empty' => 0,
+				'values' => array(0=>$langs->trans('Add'), 1=>$langs->trans('MassActionReplace'), 2 =>$langs->trans('MassActionDelete'))
+			);
+
+			$toprint = $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
+		}
+
+		$this->resprints = $toprint;
 	}
 
     /**
@@ -158,20 +143,20 @@ class Actionsmassaction
      */
     public function doMassActions($parameters, &$object, &$action, $hookmanager)
     {
-        require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
         global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
+		$langs->load('massaction@massaction');
 
 		if(empty($massaction) && GETPOSTISSET('massaction')) $massaction = GETPOST('massaction', 'alphanohtml');
 
 		$TContext = explode(":", $parameters['context']);
+		$confirm = GETPOST('confirm', 'alphanohtml');
 
 		$error = 0; // Error counter
+		$errormsg = ''; // Error message
 
-        //print_r($parameters); echo "action: " . $action;
-        if (strpos($parameters['context'], 'list') !== 0)
+		// Action en masse "Génération archive zip"
+        if ($massaction == 'generate_zip' && strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massaction@massaction');
-
             // @TODO Ask for compression format and filename
             /*if($massaction == 'generate_zip')
             {
@@ -184,174 +169,173 @@ class Actionsmassaction
                 $this->resprints = $formconfirm;
             }*/
 
-            if($massaction == 'generate_zip')
-            {
-                if (empty($diroutputmassaction) || empty($parameters['uploaddir']))
-                {
-                    $error++;
-                    $errormsg = $langs->trans('NoDirectoryAvailable');
-                }
 
-                if(!$error) {
-                    // Lists all file to add in the zip archive
-                    $formfile = new FormFile($db);
-                    $toarchive = array();
-                    foreach ($parameters['toselect'] as $objectid) {
-                        $object->fetch($objectid);
-                        $ref = dol_sanitizeFileName($object->ref);
-                        if($object->element == 'invoice_supplier') $subdir = get_exdir($object->id, 2, 0, 0, $object, 'invoice_supplier').$ref;
-                        else $subdir = $ref;
+			if (empty($diroutputmassaction) || empty($parameters['uploaddir']))
+			{
+				$error++;
+				$errormsg = $langs->trans('NoDirectoryAvailable');
+			}
 
-                        $filedir = $parameters['uploaddir'] . '/' . $subdir;
+			if(!$error) {
+				// Lists all file to add in the zip archive
+				require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+				$formfile = new FormFile($db);
+				$toarchive = array();
+				foreach ($parameters['toselect'] as $objectid) {
+					$object->fetch($objectid);
+					$ref = dol_sanitizeFileName($object->ref);
+					if($object->element == 'invoice_supplier') $subdir = get_exdir($object->id, 2, 0, 0, $object, 'invoice_supplier').$ref;
+					else $subdir = $ref;
 
-                        // @TODO : use dol_dir_list ?
-                        /*
-                        require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
-                        $filearray=dol_dir_list($filedir,"files",1,'','','',1);
-                        */
+					$filedir = $parameters['uploaddir'] . '/' . $subdir;
 
-                        $formfile->getDocumentsLink($object->element, $ref, $filedir);
-                        $toarchive = array_merge($toarchive, $formfile->infofiles['files']);
-                    }
+					// @TODO : use dol_dir_list ?
+					/*
+					require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+					$filearray=dol_dir_list($filedir,"files",1,'','','',1);
+					*/
 
-                    if (empty($toarchive)) {
-                        $error++;
-                        $errormsg = $langs->trans('NoFileToAddInArchive');
-                    }
-                }
+					$formfile->getDocumentsLink($object->element, $ref, $filedir);
+					$toarchive = array_merge($toarchive, $formfile->infofiles['files']);
+				}
 
-                if(!$error) {
-                    $compressmode = GETPOST('compress_mode', 'alphanohtml');
-                    $compressmode = 'zip';
-                    //$filename = GETPOST('filename');
-                    $filename = 'dolibarr_'.date('Ymd_His').'.'.$compressmode;
+				if (empty($toarchive)) {
+					$error++;
+					$errormsg = $langs->trans('NoFileToAddInArchive');
+				}
+			}
 
-                    // Copy files in a temp directory
-                    $tempdir = $diroutputmassaction.'/temp/';
-                    dol_mkdir($tempdir);
-                    foreach ($toarchive as $filepath) {
-                        dol_copy($filepath, $tempdir.'/'.basename($filepath), 0, 1);
-                    }
+			if(!$error) {
+				//$compressmode = GETPOST('compress_mode', 'alphanohtml');
+				$compressmode = 'zip';
+				//$filename = GETPOST('filename');
+				$filename = 'dolibarr_'.date('Ymd_His').'.'.$compressmode;
 
-                    // @TODO : deal with other compression type than zip
-                    // Generate the zip archive
-                    $file = new SplFileInfo(($tempdir));
-                    $tempdir = $file->getRealPath();
-                    dol_compress_dir($tempdir, $diroutputmassaction.'/'.$filename, $compressmode);
-                    // Delete temp directory
-                    dol_delete_dir_recursive($tempdir);
-                    // Auto Download
-                    if (file_exists($diroutputmassaction.'/'.$filename)) {
-                        if (isset($conf->global->MASSACTION_AUTO_DOWNLOAD)){
-                            header('Content-Type: application/zip');
-                            header('Content-Disposition: attachment; filename="'.$filename.'"');
-                            header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
-                            readfile($diroutputmassaction.'/'.$filename);
-                        }
-                        else {
-                            setEventMessage($langs->trans('MassActionZIPGenerated', count($toarchive)));
-                        }
-                    }
-                    else{
-                        setEventMessage($langs->trans('MassActionErrorGeneration'),'errors');
-                    }
-                    header('Location:'.$_SERVER['PHP_SELF']);
-                }
-            }
+				// Copy files in a temp directory
+				$tempdir = $diroutputmassaction.'/temp/';
+				dol_mkdir($tempdir);
+				foreach ($toarchive as $filepath) {
+					dol_copy($filepath, $tempdir.'/'.basename($filepath), 0, 1);
+				}
+
+				// @TODO : deal with other compression type than zip
+				// Generate the zip archive
+				$file = new SplFileInfo(($tempdir));
+				$tempdir = $file->getRealPath();
+				dol_compress_dir($tempdir, $diroutputmassaction.'/'.$filename, $compressmode);
+				// Delete temp directory
+				dol_delete_dir_recursive($tempdir);
+				// Auto Download
+				if (file_exists($diroutputmassaction.'/'.$filename)) {
+					if (isset($conf->global->MASSACTION_AUTO_DOWNLOAD)){
+						header('Content-Type: application/zip');
+						header('Content-Disposition: attachment; filename="'.$filename.'"');
+						header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
+						readfile($diroutputmassaction.'/'.$filename);
+					}
+					else {
+						setEventMessage($langs->trans('MassActionZIPGenerated', count($toarchive)));
+					}
+				}
+				else{
+					setEventMessage($langs->trans('MassActionErrorGeneration'),'errors');
+				}
+				header('Location:'.$_SERVER['PHP_SELF']);
+				exit;
+			}
         }
 
-
-		if(in_array('thirdpartylist', $TContext)
+		// Action en masse d'ajout de destinataires à un e-mailing
+		if ($action == 'confirm_linktomailing' && $confirm == 'yes' && $conf->mailing->enabled && $user->rights->mailing->creer &&
+			(in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
-			|| in_array('userlist', $TContext)) {
-
-			$confirm = GETPOST('confirm', 'alphanohtml');
+			|| in_array('userlist', $TContext)))
+		{
 			$mailing_selected = GETPOST('select_mailings', 'int');
 			$toselect = GETPOST('toselect', 'array');
 
-			if($action == 'confirm_linktomailing' && $confirm == 'yes'){
+			if (!empty($mailing_selected)) {
+				// On rassemble les informations dans un tableau "$TCibles" afin d'ajouter au mailing les nouveaux destinataires
+				$TCibles = array();
+				if ($object->element == "member") $obj = new Adherent($this->db);
+				else $obj = new $object->element($this->db);
 
-				if(!empty($mailing_selected)){
-
-					//on rassemble les informations dans un tableau "$TCibles" afin d'ajouter au mailing les nouveaux destinataires
-					$TCibles = array();
-					if($object->element == "member")  $obj = new Adherent($this->db);
-					else $obj = new $object->element($this->db);
-
-					if(!empty($toselect)){
-						foreach($toselect as $element_id) {
-							$res = $obj->fetch($element_id);
-							if ($res) {
-								$TCibles[$obj->id]['id'] = $obj->id;
-								$TCibles[$obj->id]['email'] = $obj->email;
-								$TCibles[$obj->id]['lastname'] = (!empty($obj->lastname)) ? $obj->lastname : $obj->name;
-								if (!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
-								$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
-							}
-						}
-					}
-
-					//on ajoute les destinataires au mailing préalablement sélectionné
-					$mailingtargets = new MailingTargets($this->db);
-					$nbtargetadded = $mailingtargets->addTargetsToDatabase($mailing_selected,$TCibles);
-
-					if($nbtargetadded < 0) {			//erreur
-						$error++;
-						$this->errors[] = $langs->trans("MassActionTargetsError");
-					} else {
-
-						$mailing= new Mailing($this->db);
-						$res = $mailing->fetch($mailing_selected);
-
-						if($res >0) {
-							$url_mailing = $mailing->getNomURL(0);			//lien du mailing concerné
-							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $url_mailing);
-						} else {
-							setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $mailing_selected);
+				if (!empty($toselect)) {
+					foreach ($toselect as $element_id) {
+						$res = $obj->fetch($element_id);
+						if ($res && !empty($obj->email)) {
+							$TCibles[$obj->id]['id'] = $obj->id;
+							$TCibles[$obj->id]['email'] = $obj->email;
+							$TCibles[$obj->id]['lastname'] = (!empty($obj->lastname)) ? $obj->lastname : $obj->name;
+							if (!empty($obj->firstname)) $TCibles[$obj->id]['firstname'] = $obj->firstname;
+							$TCibles[$obj->id]['source_url'] = getUrlToMailingCibles($object->element, $obj);
 						}
 					}
 				}
-			} elseif ($action == 'confirm_linksalesperson' && $confirm == 'yes'){
 
-				$toselect = GETPOST('toselect', 'array');
-				$TSalesPersonToLink = GETPOST('tsalespersontolink', 'array');
-				$salesperson_option = GETPOST('select_salesperson_option', 'int');
+				// On ajoute les destinataires au mailing préalablement sélectionné
+				$mailingtargets = new MailingTargets($this->db);
+				$nbtargetadded = $mailingtargets->addTargetsToDatabase($mailing_selected, $TCibles);
 
-				$societe = new Societe($this->db);
+				if ($nbtargetadded < 0) {            //erreur
+					$error++;
+					$errormsg = "MassActionTargetsError";
+				} else {
+					$mailing = new Mailing($this->db);
+					$res = $mailing->fetch($mailing_selected);
 
-				foreach($toselect as $thirdparty_id){
+					if ($res > 0) {
+						$url_mailing = $mailing->getNomURL(0);
+						setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $url_mailing);
+					} else {
+						setEventMessage($langs->trans('MassActionNbRecipientsAdded', $nbtargetadded) . ' ' . $mailing_selected);
+					}
+				}
+			}
+		}
 
-					$res = $societe->fetch($thirdparty_id);
-					if($res){
-						if($salesperson_option == 2){
-							foreach($TSalesPersonToLink as $id_salesperson){
-								$res = $societe->del_commercial($user, $id_salesperson);
-								if($res < 0) $error++;
+		// Action en masse d'affectation de commercial
+		if ($action == 'confirm_linksalesperson' && $confirm == 'yes' && $user->rights->societe->creer &&
+			in_array('thirdpartylist', $TContext))
+		{
+			$toselect = GETPOST('toselect', 'array');
+			$select_salesperson = GETPOST('select_salesperson', 'array');
+			// Option : 0 = ajout, 1 = remplacement, 2 = retrait
+			$salesperson_option = GETPOST('select_salesperson_option', 'int');
+
+			$societe = new Societe($this->db);
+
+			foreach($toselect as $thirdparty_id) {
+				$res = $societe->fetch($thirdparty_id);
+				if($res) {
+					if($salesperson_option == 2) {
+						foreach($select_salesperson as $id_salesperson) {
+							$res = $societe->del_commercial($user, $id_salesperson);
+							if($res < 0) {
+								$error++;
+								$errormsg = $societe->error;
 							}
-						} else {
-							$res = $societe->setSalesRep($TSalesPersonToLink, ($salesperson_option == 0) ? true : false);
-							if($res < 0) $error++;
-						}
-
-						if(!$error){
-							$url_societe = $societe->getNomURL(0);			//lien du mailing concerné
-							setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess') . ' : ' . $url_societe);
-							header('Location:'.$_SERVER['PHP_SELF']);
 						}
 					} else {
-						$error++;
+						$res = $societe->setSalesRep($select_salesperson, ($salesperson_option == 0));
+						if($res < 0) {
+							$error++;
+							$errormsg = $societe->error;
+						}
 					}
-
+				} else {
+					$error++;
+					$errormsg = $societe->error;
 				}
+			}
 
-
+			if(!$error) {
+				setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
 			}
 		}
 
         if (! $error) {
-			/*$this->results = array('myreturn' => 999);
-			$this->resprints = 'A text to show';*/
             return 0; // or return 1 to replace standard code
         } else {
             $this->errors[] = $errormsg;
@@ -377,43 +361,39 @@ class Actionsmassaction
 
 		$TContext = explode(":", $parameters['context']);
 
-        //print_r($parameters); print_r($object); echo "action: " . $action;
-        if (strpos($parameters['context'], 'list') !== 0)		// do something only for the context 'somecontext1' or 'somecontext2'
+		// Ajout de l'action en masse "Génération archive zip" sur les listes
+        if (strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massaction@massaction');
-            $disabled = false;
-            $this->resprints = '<option value="generate_zip"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGenerateZIP").'</option>';
-            //$disabled = false;
-            //$this->resprints.= '<option value="generate_pdf"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("MassActionGeneratePDF").'</option>';
+			$label = '<span class="fa fa-file-archive paddingrightonly"></span> ' . $langs->trans("MassActionGenerateZIP");
+			$this->resprints = '<option value="generate_zip" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
         }
 
+		// Ajout de l'action en masse "Envoi par e-mail" sur la liste des factures fournisseur
         if (in_array('supplierinvoicelist', $TContext))
 		{
-			$disabled = false;
-			$this->resprints .= '<option value="presend"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("SendByMail").'</option>';
+			$this->resprints .= '<option value="presend">'.$langs->trans("SendByMail").'</option>';
 		}
 
+		// Ajout de l'action en masse d'ajout de destinataires à un e-mailing
 		if(in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if ($conf->mailing->enabled) {
-				//options "Mailing : ajouter destinataires"
-				$label = '<span class="fa fa-envelope-o" style=""></span> ' . $langs->trans("MassActionLinktoMailing");
+			if ($conf->mailing->enabled && $user->rights->mailing->creer) {
+				$label = '<span class="fa fa-envelope-o paddingrightonly"></span> ' . $langs->trans("MassActionLinktoMailing");
 				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
-
 			}
 		}
+
+		// Ajout de l'action en masse d'affectation de commerciaux aux tiers
 		if(in_array('thirdpartylist', $TContext)){
-
-			if ($conf->societe->enabled) {
-				//options "Mailing : ajouter destinataires"
-				$label = '<span class="fa fa-user" style=""></span> ' . $langs->trans("MassActionLinkSalesperson");
-				$this->resprints .= '<option value="linksalesperson"' . ($disabled ? ' disabled="disabled"' : '') . ' data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
-
+			if ($user->rights->societe->creer) {
+				$label = '<span class="fa fa-user paddingrightonly"></span> ' . $langs->trans("MassActionLinkSalesperson");
+				$this->resprints .= '<option value="linksalesperson" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}
 		}
+
 		if (! $error) {
             return 0; // or return 1 to replace standard code
         } else {
