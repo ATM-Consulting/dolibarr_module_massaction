@@ -64,6 +64,7 @@ class Actionsmassaction
 		global $conf, $user, $massaction, $langs;
 
 		$TContext = explode(":", $parameters['context']);
+		$toprint = '';
 
 		// Action en masse d'ajout de destinataires à un e-mailing, choix de l'e-mailing
 		if($massaction == 'linktomailing' && $conf->mailing->enabled && $user->rights->mailing->creer
@@ -99,8 +100,6 @@ class Actionsmassaction
 
 			$form = new Form($this->db);
 			$toprint = $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinktoMailing"), $langs->trans("ConfirmSelectEmailing"), "confirm_linktomailing", $formquestion, 0, 0, 200, 500, 1);
-
-			$this->resprints = $toprint;
 		}
 
 		// Action en masse d'affectation de commerciaux aux tiers, choix des options
@@ -128,9 +127,9 @@ class Actionsmassaction
 			);
 
 			$toprint = $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("MassActionLinkSalesperson"), $langs->trans("ConfirmSelectSalesPerson"), "confirm_linksalesperson", $formquestion, 'no', 0, 200, 500, 1);
-
-			$this->resprints = $toprint;
 		}
+
+		$this->resprints = $toprint;
 	}
 
     /**
@@ -303,6 +302,7 @@ class Actionsmassaction
 		{
 			$toselect = GETPOST('toselect', 'array');
 			$select_salesperson = GETPOST('select_salesperson', 'array');
+			// Option : 0 = ajout, 1 = remplacement, 2 = retrait
 			$salesperson_option = GETPOST('select_salesperson_option', 'int');
 
 			$societe = new Societe($this->db);
@@ -310,7 +310,7 @@ class Actionsmassaction
 			foreach($toselect as $thirdparty_id) {
 				$res = $societe->fetch($thirdparty_id);
 				if($res) {
-					if($salesperson_option == 2){
+					if($salesperson_option == 2) {
 						foreach($select_salesperson as $id_salesperson) {
 							$res = $societe->del_commercial($user, $id_salesperson);
 							if($res < 0) {
@@ -319,20 +319,20 @@ class Actionsmassaction
 							}
 						}
 					} else {
-						$res = $societe->setSalesRep($select_salesperson, ($salesperson_option == 0) ? true : false);
+						$res = $societe->setSalesRep($select_salesperson, ($salesperson_option == 0));
 						if($res < 0) {
 							$error++;
 							$errormsg = $societe->error;
 						}
 					}
-
-					if(!$error) {
-						setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
-					}
 				} else {
 					$error++;
 					$errormsg = $societe->error;
 				}
+			}
+
+			if(!$error) {
+				setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
 			}
 		}
 
@@ -372,8 +372,7 @@ class Actionsmassaction
 		// Ajout de l'action en masse "Envoi par e-mail" sur la liste des factures fournisseur
         if (in_array('supplierinvoicelist', $TContext))
 		{
-			$disabled = false;
-			$this->resprints .= '<option value="presend"'.($disabled?' disabled="disabled"':'').'>'.$langs->trans("SendByMail").'</option>';
+			$this->resprints .= '<option value="presend">'.$langs->trans("SendByMail").'</option>';
 		}
 
 		// Ajout de l'action en masse d'ajout de destinataires à un e-mailing
