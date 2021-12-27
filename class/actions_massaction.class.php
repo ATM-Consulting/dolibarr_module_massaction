@@ -144,6 +144,7 @@ class Actionsmassaction
     public function doMassActions($parameters, &$object, &$action, $hookmanager)
     {
         global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
+		$langs->load('massaction@massaction');
 
 		if(empty($massaction) && GETPOSTISSET('massaction')) $massaction = GETPOST('massaction', 'alphanohtml');
 
@@ -156,8 +157,6 @@ class Actionsmassaction
 		// Action en masse "Génération archive zip"
         if ($massaction == 'generate_zip' && strpos($parameters['context'], 'list') !== 0)
         {
-            $langs->load('massaction@massaction');
-
             // @TODO Ask for compression format and filename
             /*if($massaction == 'generate_zip')
             {
@@ -265,7 +264,7 @@ class Actionsmassaction
 				if (!empty($toselect)) {
 					foreach ($toselect as $element_id) {
 						$res = $obj->fetch($element_id);
-						if ($res) {
+						if ($res && !empty($obj->email)) {
 							$TCibles[$obj->id]['id'] = $obj->id;
 							$TCibles[$obj->id]['email'] = $obj->email;
 							$TCibles[$obj->id]['lastname'] = (!empty($obj->lastname)) ? $obj->lastname : $obj->name;
@@ -281,7 +280,7 @@ class Actionsmassaction
 
 				if ($nbtargetadded < 0) {            //erreur
 					$error++;
-					$errormsg = $langs->trans("MassActionTargetsError");
+					$errormsg = "MassActionTargetsError";
 				} else {
 					$mailing = new Mailing($this->db);
 					$res = $mailing->fetch($mailing_selected);
