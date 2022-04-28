@@ -19,9 +19,9 @@
 
 
 # Module label 'ModuleMassActionName'
-ModuleMassActionName = Actions en masse PDF
+ModuleMassActionName = Actions en masse
 # Module description 'ModuleMassActionDesc'
-ModuleMassActionDesc = Génération d'archives ZIP
+ModuleMassActionDesc = Génération d'actions en masse sur les listes
 
 #
 # Page d'administration
