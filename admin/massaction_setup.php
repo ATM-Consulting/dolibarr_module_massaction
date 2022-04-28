@@ -71,7 +71,7 @@ if (preg_match('/del_(.*)/',$action,$reg))
 /*
  * View
  */
-$page_name = "massactionSetup";
+$page_name = "MassActionSetupPage";
 llxHeader('', $langs->trans($page_name));
 // Subheader
 $linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
