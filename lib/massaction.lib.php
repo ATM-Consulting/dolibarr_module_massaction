@@ -25,7 +25,7 @@
 
 function massactionAdminPrepareHead()
 {
-    global $langs, $conf;
+    global $langs, $conf, $object;
 
     $langs->load("massaction@massaction");
 

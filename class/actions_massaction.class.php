@@ -29,12 +29,14 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
+require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
+
 
 
 /**
  * Class Actionsmassaction
  */
-class Actionsmassaction
+class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 {
     /**
      * @var array Hook results. Propagated to $hookmanager->resArray for later reuse
@@ -67,7 +69,7 @@ class Actionsmassaction
 		$toprint = '';
 
 		// Action en masse d'ajout de destinataires à un e-mailing, choix de l'e-mailing
-		if($massaction == 'linktomailing' && $conf->mailing->enabled && $user->rights->mailing->creer
+		if($massaction == 'linktomailing' && $conf->mailing->enabled && $user->hasRight('mailing', 'creer')
 			&& (in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
@@ -103,7 +105,7 @@ class Actionsmassaction
 		}
 
 		// Action en masse d'affectation de commerciaux aux tiers, choix des options
-		if($massaction == 'linksalesperson' && $user->rights->societe->creer
+		if($massaction == 'linksalesperson' && $user->hasRight('societe', 'creer')
 			&& in_array('thirdpartylist', $TContext))
 		{
 			$form = new Form($this->db);
@@ -227,7 +229,7 @@ class Actionsmassaction
 				dol_delete_dir_recursive($tempdir);
 				// Auto Download
 				if (file_exists($diroutputmassaction.'/'.$filename)) {
-					if (isset($conf->global->MASSACTION_AUTO_DOWNLOAD)){
+					if (getDolGlobalString('MASSACTION_AUTO_DOWNLOAD')){
 						header('Content-Type: application/zip');
 						header('Content-Disposition: attachment; filename="'.$filename.'"');
 						header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
@@ -246,7 +248,7 @@ class Actionsmassaction
         }
 
 		// Action en masse d'ajout de destinataires à un e-mailing
-		if ($action == 'confirm_linktomailing' && $confirm == 'yes' && $conf->mailing->enabled && $user->rights->mailing->creer &&
+		if ($action == 'confirm_linktomailing' && $confirm == 'yes' && $conf->mailing->enabled && $user->hasRight('mailing', 'creer') &&
 			(in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
@@ -296,7 +298,7 @@ class Actionsmassaction
 		}
 
 		// Action en masse d'affectation de commercial
-		if ($action == 'confirm_linksalesperson' && $confirm == 'yes' && $user->rights->societe->creer &&
+		if ($action == 'confirm_linksalesperson' && $confirm == 'yes' && $user->hasRight('societe', 'creer') &&
 			in_array('thirdpartylist', $TContext))
 		{
 			$toselect = GETPOST('toselect', 'array');
@@ -380,7 +382,7 @@ class Actionsmassaction
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if ($conf->mailing->enabled && $user->rights->mailing->creer) {
+			if ($conf->mailing->enabled && $user->hasRight('mailing', 'creer')) {
 				$label = '<span class="fa fa-envelope-o paddingrightonly"></span> ' . $langs->trans("MassActionLinktoMailing");
 				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}
@@ -388,7 +390,7 @@ class Actionsmassaction
 
 		// Ajout de l'action en masse d'affectation de commerciaux aux tiers
 		if(in_array('thirdpartylist', $TContext)){
-			if ($user->rights->societe->creer) {
+			if ($user->hasRight('societe', 'creer')) {
 				$label = '<span class="fa fa-user paddingrightonly"></span> ' . $langs->trans("MassActionLinkSalesperson");
 				$this->resprints .= '<option value="linksalesperson" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}
