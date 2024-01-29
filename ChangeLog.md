@@ -1,11 +1,17 @@
 # Changelog for massaction
 
 ## Unreleased
+
+
+
+## Release 1.4
+
 - NEW : Compat V19 et php 8.2 *04/12/2023* - 1.4.0  
   Changed Dolibarr compatibility range to 15 min - 19 max  
   Change PHP compatibility range to 7.0 min - 8.2 max
 
-## 1.3
+## Release 1.3
+
 - FIX : Family name due to compatibility v16 *2807/2022* - 1.3.2
 - FIX : Module name and icon  *28/04/2022* - 1.3.1
 - NEW: ajout massaction "Lier commercial" sur la liste des Tiers
@@ -16,5 +22,6 @@
 - NEW: cleanup (delete unused files + functions) + compatibility with
   Dolibarr v13-v14 - *2021-08-03* - 1.1.0
 
-## Version 1.0
+## Release 1.0
+
 - No changelog existed prior to this release
