@@ -427,4 +427,463 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
         return $select;
     }
+
+
+
+	/**
+	 *
+	 * @param   array           $parameters     Hook metadatas (context, etc...)
+	 * @param   CommonObject    $object         The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
+	 * @param   string          $action         Current action (if set). Generally create or edit or null
+	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
+	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
+	 */
+//	public function printObjectLineTitle($parameters, &$object, &$action, $hookmanager)
+//	{
+//		$TContexts = explode(':', $parameters['context']);
+//
+//		if(in_array('propalcard', $TContexts)) {
+//
+
+//<!---->
+//<!--			<script type="text/javascript">-->
+//<!--				$(document).ready(function () {-->
+//<!--					$('.liste_titre').append('<th class="linecolcheck"><input type="checkbox"></th>');-->
+//<!--				})-->
+//<!--			</script>-->
+//<!---->
+//<!--
+//
+//		}
+//
+//		return 0;
+//	}
+//
+//
+//	public function printObjectLine($parameters, &$object, &$action, $hookmanager)
+//	{
+//		$TContexts = explode(':', $parameters['context']);
+//
+//		if(in_array('propalcard', $TContexts)) {
+//
+//
+//<!--			<script type="text/javascript">-->
+//<!--				console.log("Rows found: ", $('#tablelines tbody tr').length);-->
+//<!---->
+//<!--				$('tbody tr').each(function() {-->
+//<!--					var rowId = $(this).data('id'); // Assurez-vous que chaque <tr> a un attribut data-id correct-->
+//<!--					$(this).append('<td class="nowrap" align="center"><input id="cb' + rowId + '" type="checkbox" name="toselect[]" value="' + rowId + '"></td>');-->
+//<!--				});-->
+//<!--			</script>-->
+//<!---->
+//<!--			-->
+//
+//		}
+//
+//		return 0;
+//	}
+
+
+	public function doActions($parameters, &$object, &$action, $hookmanager)
+	{
+
+		global $langs;
+
+		$form = new Form($this->db);
+
+		$TContexts = explode(':', $parameters['context']);
+
+		if(in_array('propalcard', $TContexts)) {
+
+			$TSelectedLines = GETPOST('selectedLines', 'alpha');
+
+			$confirm = GETPOST('confirm');
+
+			if ($action == 'delete_lines' && $confirm == 'yes') {
+
+				foreach (explode(',', $TSelectedLines) as $selectedLine) {
+
+					$object->deleteline(intval($selectedLine));
+
+				}
+
+			}
+
+		}
+
+		return 0;
+	}
+
+	public function beforeBodyClose($parameters)
+	{
+		global $langs, $action;
+
+
+		$form = new Form($this->db);
+
+		$TContexts = explode(':', $parameters['context']);
+
+		$selectedLines = GETPOST('selectedLines', 'alpha');
+
+		$massaction = GETPOST('massaction', 'alpha');
+
+		if(in_array('propalcard', $TContexts)) {
+			$arrayofmassactions = array();
+
+			$permissiontosendbymail = 1;
+			$permissiontovalidate = 1;
+			$permissiontoclose = 1;
+			$permissiontodelete = 1;
+
+			$arrayofmassactions['setbilled'] =img_picto('', 'bill', 'class="pictofixedwidth"').$langs->trans("ClassifyBilled");
+			$arrayofmassactions['cut']=img_picto('', 'fa-scissors', 'class="pictofixedwidth"').$langs->trans("Cut");
+
+			if ($permissiontodelete) {
+				$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
+			}
+
+			$massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+			if($massaction == 'predelete') {
+				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("ConfirmMassValidation"), $langs->trans("ConfirmMassValidationQuestion"), "delete_lines", null, '', 0, 200, 500, 1);
+			}
+
+			$id = GETPOSTINT('id');
+
+			?>
+
+			<script type="text/javascript">
+
+				var massActionButton = <?php echo json_encode($massactionbutton); ?>;
+
+				var formConfirm = <?php echo json_encode($formconfirm) ?>;
+
+				function initCheckForSelect(mode, name, cssclass)	/* mode is 0 during init of page or click all, 1 when we click on 1 checkboxi, "name" refers to the class of the massaction button, "cssclass" to the class of the checkfor select boxes */
+				{
+					atleastoneselected=0;
+					jQuery("."+cssclass).each(function( index ) {
+						if ($(this).is(':checked')) atleastoneselected++;
+					});
+
+					if (atleastoneselected > 0) {
+						$('.massactionform').removeClass('hideobject')
+					} else {
+						$('.massactionform').addClass('hideobject')
+					}
+				}
+
+				function showCheckboxes() {
+					var count = 0;
+					// Ajout de la checkbox "générale" pour sélectionner toute les lignes d'un coup
+					if(count > 0){
+						$('#tablelines .liste_titre').append(`
+							<th class="center">
+								<div class="inline-block checkallactions">
+									<input type="checkbox" id="checkforselects" name="checkforselects" class="checkallactions">
+								</div>
+							</th>
+						`);
+					}
+
+					// Pour chaque tr, je veux une checkbox dans le td sauf si ce n'est pas une ligne propale
+					$('#tablelines tbody tr').each(function () {
+						var rowId = $(this).attr('id');
+						if (rowId && rowId.startsWith("row-")) {
+							count++;
+							var dataId = $(this).data('id');
+							$(this).append('<td class="nowrap" align="center"><input id="cb' + dataId + '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' + dataId + '"></td>');
+						} else {
+							$(this).append('<td></td>');
+						}
+					});
+				}
+
+				// Cette fonction met à jour l'input hidden selectedLines pour ajouter les lignes sélectionnées séparées par virgules
+				function updateSelectedLines() {
+					var TSelectedLines = [];
+					$('.checkforselect:checked').each(function() {
+						TSelectedLines.push($(this).val());
+					})
+					$('#selectedLines').val(TSelectedLines.join(','));
+				}
+
+				$(document).ready(function () {
+
+					// Reset toutes les checkbox
+					$('input[type="checkbox"]').prop('checked', false);
+
+					var action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']. '?id=' .$id, ENT_QUOTES, 'UTF-8'); ?>";
+
+					var token = "<?php echo newToken() ?>";
+
+					var selectedLines = "<?php echo $selectedLines ?>";
+
+					if (formConfirm != null) {
+						toShow = formConfirm;
+					} else {
+						toShow = massActionButton;
+					}
+
+					var form = `
+						<form method="POST" id="searchFormList" action="` + action + `">
+							<input type="hidden" name="token" value="` + token + `">
+							<input type="hidden" name="selectedLines" id="selectedLines" value="`+selectedLines+`">
+							<input type="hidden" name="action" value="">
+
+							`+toShow+`
+
+						</form>
+					`;
+
+					$('#addproduct:last-child').before(form);
+
+					showCheckboxes();
+
+					// Sélection de toutes les lignes si checkforselects est checked
+					$('div.checkallactions #checkforselects').click(function (){
+						if($(this).is(':checked')) {
+							console.log("We check all checkforselect and trigger the change method");
+							$(".checkforselect").prop('checked', 'true').trigger('change');
+						} else {
+							console.log("We uncheck all");
+							$(".checkforselect").prop('checked', false).trigger('change');
+						}
+						if(typeof initCheckForSelect == 'function') {
+							initCheckForSelect(0, "massaction", "checkforselect")
+						} else {
+							console.log("No function initCheckForSelect found. Call won't be done.")
+						}
+					})
+
+					// Highlight des lignes sélectionnées
+					$('.checkforselect').change(function() {
+						$(this).closest('tr').toggleClass('highlight', this.checked);
+						updateSelectedLines();
+					})
+
+					// Massaction
+					initCheckForSelect(0, "massaction", "checkforselect");
+
+					$(".checkforselect").click(function() {
+						initCheckForSelect(1, "massaction", "checkforselect");
+					});
+
+
+					$(".massactionselect").change(function() {
+						var massaction = $( this ).val();
+
+						$('input[name="action"]').val(massaction);
+
+						/* Warning: if you set submit button to disabled, post using Enter will no more work if there is no other button */
+						if ($(this).val() != '0')
+						{
+							jQuery(".massactionconfirmed").prop('disabled', false);
+							jQuery(".massactionother").hide();	/* To disable if another div was open */
+							jQuery(".massaction"+massaction).show();
+						}
+						else
+						{
+							jQuery(".massactionconfirmed").prop('disabled', true);
+							jQuery(".massactionother").hide();	/* To disable any div open */
+						}
+					});
+
+					$('.massactionform').submit(function (event) {
+
+						var action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF']. '?id=' .$id, ENT_QUOTES, 'UTF-8'); ?>";
+
+						var actionValue = $('input[name="action"]').val();
+
+						var TSelectedLines = $('#selectedLines').val().split(',');
+
+						var token = "<?php echo newToken() ?>";
+
+						if (actionValue == 'predelete_lines') {
+							event.preventDefault();
+
+						}
+					});
+				})
+			</script>
+
+			<?php
+
+		}
+
+		return 0;
+	}
+
+
+
+	/** Overloading the doActions function : replacing the parent's function with the one below
+	 *  @param      parameters  meta datas of the hook (context, etc...)
+	 *  @param      object             the object you want to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
+	 *  @param      action             current action (if set). Generally create or edit or null
+	 *  @return       void
+	 */
+
+	function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+	{
+		global $langs,$db,$user, $conf, $mc;
+
+		$langs->load('split@split');
+
+		$contexts = explode(':',$parameters['context']);
+//		var_dump($contexts);exit;
+
+		// TODO make it work on invoices and orders before adding this button
+		if(/*in_array('ordercard',$contexts) ||*/ in_array('propalcard',$contexts) /*|| in_array('invoicecard',$contexts)*/) {
+
+			$rightCreate = method_exists($user,'hasRight') ? $user->hasRight($object->element,'create') : $user->rights->{$object->element}->creer;
+			$rightWrite = method_exists($user,'hasRight') ? $user->hasRight($object->element,'write') : $user->rights->{$object->element}->write;
+
+			$displayButton = ($object->statut == 0 && ($rightCreate || $rightWrite));
+
+			if(GETPOST('actionSplitDelete') == 'ok') {
+				setEventMessage($langs->trans('SplitDeleteOk'));
+			}
+			else if(GETPOST('actionSplit') == 'ok') {
+				$url = GETPOST('new_url');
+				if (!empty($url)) $url = '- '.$url;
+				setEventMessage($langs->trans('SplitOk', $url));
+			}
+			else if(GETPOST('actionSplitCopy') == 'ok') {
+				$url = GETPOST('new_url');
+				if (!empty($url)) $url = '- '.$url;
+				setEventMessage($langs->trans('SplitCopyOk', $url));
+			}
+			if ($displayButton) {
+
+				if($object->element=='facture')$idvar = 'facid';
+				else $idvar='id';
+				if($object->element == 'propal') {
+					if((float)DOL_VERSION >= 4.0) $fiche = '/comm/propal/card.php';
+					else $fiche = '/comm/propal.php';
+				}
+				else if($object->element == 'commande') {
+					if(floatval(DOL_VERSION) >= 3.7) $fiche = '/commande/card.php';
+					else $fiche = '/commande/fiche.php';
+				}
+				else if($object->element == 'facture') {
+					if(floatval(DOL_VERSION) >= 6.0) $fiche = '/compta/facture/card.php';
+					else $fiche = '/compta/facture.php';
+				}
+
+				$token = function_exists('newToken')?newToken():$_SESSION['newtoken'];
+				?><script type="text/javascript">
+					$(document).ready(function() {
+
+						var split_bt = $('<div class="inline-block divButAction"><a id="split_it" href="javascript:;" class="butAction"><?php echo  $langs->trans('SplitIt' )?></a></div>');
+
+						$('div.fiche div.tabsAction').append(split_bt);
+
+						split_bt.click(function() {
+							$('#pop-split').remove();
+							$('body').append('<div id="pop-split"></div>');
+
+							$.get('<?php echo dol_buildpath('/split/script/showLines.php',1).'?id='.$object->id.'&element='.$object->element ?>', function(data) {
+								$('#pop-split').html(data)
+
+								$('#pop-split').dialog({
+									title:'<?php echo $langs->transnoentities('SplitThisDocument') ?>'
+									,width:'80%'
+									,modal: true
+									,buttons: [
+										{
+											text: "<?php echo $langs->transnoentities('SimplyDelete', $object->ref); ?>",
+											click: function() {
+
+												$('#splitform input[name=action]').val('delete');
+
+												$.post('<?php echo dol_buildpath('/split/script/splitLines.php',1) ?>', $('#splitform').serialize(), function() {
+													document.location.href="<?php echo dol_buildpath($fiche,1).'?id='.$object->id.'&actionSplitDelete=ok&token='.$token; ?>";
+												});
+
+												$( this ).dialog( "close" );
+											}
+										},
+										{
+											text: "<?php echo $langs->transnoentities('SimplyCopy'); ?>",
+											title: "<?php echo $langs->transnoentities('SimplyCopyTitle'); ?>",
+											click: function() {
+
+												$('#splitform input[name=action]').val('copy');
+
+												$.ajax({
+													url: '<?php echo dol_buildpath('/split/script/splitLines.php', 1); ?>'
+													, method: 'POST'
+													, data: $('#splitform').serialize()
+													,dataType: "json"
+													// La fonction à apeller si la requête aboutie
+													,success: function (data) {
+														//console.log(data);
+														// Loading data
+														if(data.result > 0){
+															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
+														}
+														else{
+															if(data.errorMessage.length > 0){
+																$.jnotify(data.errorMessage, 'error', {timeout: 5, type: 'error', css: 'error'});
+															}else{
+																$.jnotify('UnknowError', 'error', {timeout: 5, type: 'error', css: 'error'});
+															}
+														}
+													}
+													// La fonction à appeler si la requête n'a pas abouti
+													,error: function( jqXHR, textStatus ) {
+														$.jnotify("Request failed: " + textStatus , 'error', {timeout: 5, type: 'error', css: 'error'});
+													}
+												});
+
+												$( this ).dialog( "close" );
+											}
+										},
+										{
+											text: "<?php echo $langs->transnoentities('SplitIt'); ?>",
+											title: "<?php echo $langs->transnoentities('SplitItTitle'); ?>",
+											click: function() {
+
+												$.ajax({
+													url: '<?php echo dol_buildpath('/split/script/splitLines.php', 1); ?>'
+													, method: 'POST'
+													, data: $('#splitform').serialize()
+													,dataType: "json"
+													// La fonction à apeller si la requête aboutie
+													,success: function (data) {
+														// Loading data
+														//console.log(data);
+														if(data.result > 0){
+															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
+														}
+														else{
+															if(data.errorMessage.length > 0){
+																$.jnotify(data.errorMessage, 'error', {timeout: 5, type: 'error', css: 'error'});
+															}else{
+																$.jnotify('UnknowError', 'error', {timeout: 5, type: 'error', css: 'error'});
+															}
+														}
+													}
+													// La fonction à appeler si la requête n'a pas abouti
+													,error: function( jqXHR, textStatus ) {
+														$.jnotify("Request failed: " + textStatus , 'error', {timeout: 5, type: 'error', css: 'error'});
+													}
+												});
+
+												$( this ).dialog( "close" );
+											}
+										}
+
+									]
+								});
+							});
+
+						});
+
+					});
+
+				</script><?php
+			}
+		}
+		return 0;
+	}
 }

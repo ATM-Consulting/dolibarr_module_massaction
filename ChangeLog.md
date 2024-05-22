@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-
+- NEW : Ajout d'un select pour actions en masse *22/05/2024* - 1.5.0
+  - Supprimer
+  - Couper
+- NEW : Ajout de checkbox à droite des lignes propal pour actions en masse *22/05/2024* - 1.5.0
+- NEW : Déplacement des fonctions du module Split dans MassAction *22/05/2024* - 1.5.0
 
 ## Release 1.4
 
