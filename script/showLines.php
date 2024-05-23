@@ -20,12 +20,13 @@
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
-	dol_include_once('/split/lib/split.lib.php');
+	dol_include_once('/massaction/lib/massaction.lib.php');
 
 	$element = GETPOST('element', 'alphanohtml');
 	$id = GETPOST('id', 'int');
+	$selectedLines = GETPOST('selectedLines', 'alpha');
 
-	$langs->load('split@split');
+	$langs->load('massaction@massaction');
 	$langs->load('companies');
 
 	// TODO make it work with orders and invoices by using fetchObjectByElement function and fixing algo
@@ -77,7 +78,18 @@
 	<?php
 
 	$class='';
-	foreach($object->lines as $k=>$line) {
+
+	$TRowIds = array_column($object->lines, 'rowid');
+
+	$TSelectedLines = explode(',',$selectedLines);
+
+	foreach ($TSelectedLines as $selectedLine) {
+		$index = array_search($selectedLine, $TRowIds);
+
+		$k = $index;
+
+		$line = $object->lines[$index];
+
 		if($line->fk_product>0) {
 			$prod=new Product($db);
 			$prod->fetch($line->fk_product);
@@ -99,7 +111,7 @@
 			?>
 			<tr class="<?php echo $class; ?>">
 				<td colspan="6" style="font-weight: bold;"><?php echo $label ?></td>
-				<td align="center"><input type="checkbox" name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
+				<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
 			</tr>
 			<?php
 
@@ -113,13 +125,10 @@
 				<td align="right"><?php echo $line->qty ?></td>
 				<td align="right"><?php echo round($line->remise_percent,2) ?>%</td>
 				<td align="right"><?php echo price($line->total_ht,0,'',1,-1,-1,$conf->currency); ?></td>
-				<td align="center"><input type="checkbox" name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
+				<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
 			</tr>
 			<?php
-
 		}
-
-
 
 	}
 

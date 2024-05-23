@@ -33,7 +33,7 @@
 	$action = GETPOST('action', 'alphanohtml');
 	$entity = GETPOST('split_entity', 'int');
 	$TMoveLine = GETPOST('TMoveLine', 'array');
-	$langs->load('split@split');
+	$langs->load('massaction@massaction');
 	if(empty($TMoveLine)){
 		$json->result = -1; // 0 nothing, 1 ok, -x errors
 		$json->errorMessage = $langs->trans('EmptyTMoveLine');
