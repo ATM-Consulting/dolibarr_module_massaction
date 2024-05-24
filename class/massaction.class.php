@@ -126,7 +126,7 @@ class MassAction {
 			if(!empty($this->db->lasterror())) {
 				$this->TErrors[] = $this->db->lasterror();
 			}
-			setEventMessages('Errors', $this->TErrors, 'errors');
+			setEventMessages('ErrorMassAction', $this->TErrors, 'errors');
 			if ($action == 'edit_quantity') {
 				dol_syslog(get_class($this)."::class MassAction - edit_quantity : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
 			} elseif ($action == 'edit_margin') {
