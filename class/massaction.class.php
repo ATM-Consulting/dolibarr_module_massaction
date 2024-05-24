@@ -198,17 +198,13 @@ class MassAction {
 		return $formConfirm;
 	}
 
-	public static function getMassActionButton($permissionToAdd, $form)
+	public static function getMassActionButton($form)
 	{
 		global $langs;
 
 		$arrayOfMassActions = array();
 
-		if(!$permissionToAdd) {
-			return 0;
-		}
-
-		$arrayOfMassActions['cut'] = img_picto('', 'fa-scissors', 'class="pictofixedwidth"') . $langs->trans("Cut");
+		$arrayOfMassActions['cut'] = img_picto('', 'fa-scissors', 'class="pictofixedwidth"') . $langs->trans("MassActionCut");
 		$arrayOfMassActions['preeditmargin'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditMargin");
 		$arrayOfMassActions['preeditquantity'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditQty");
 		$arrayOfMassActions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");

@@ -64,7 +64,7 @@ MassActionSalesPersonHelp=<b>Add :</b> will add selected sales representatives t
 #
 EditMargin=Edit margin
 EditQty=Edit quantity
-Cut=Cut
+MassActionCut=Cut
 MassActionConfirmEdit=Mass edit confirmation
 MassActionConfirmEditQuantity=Are you sure you want to change the mass quantity for %s lines?
 MassActionConfirmEditMargin=Are you sure you want to change the mass margin for %s lines?

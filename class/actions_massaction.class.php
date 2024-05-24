@@ -515,6 +515,11 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					} else {
 						// Convertir en float seulement si la validation est réussie
 						$quantity = floatval($quantity);
+
+						if($quantity < 0) {
+							$TErrors[] = $langs->trans('ErrorQtyNegative');
+							$action = '';
+						}
 					}
 				} else {
 					$marge_tx = GETPOST('marge_tx', 'alpha');
@@ -525,13 +530,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					} else {
 						// Convertir en float seulement si la validation est réussie
 						$marge_tx = floatval($marge_tx);
-					}
-				}
-
-				if (in_array('ordercard', $TContexts)) {
-					if ($quantity < 0) {
-						$TErrors[] = $langs->trans('ErrorQtyNegative');
-						$action = '';
 					}
 				}
 
@@ -555,11 +553,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		return 0;
 	}
 
+
 	/**
 	 * @param $parameters
+	 * @param Propal|Facture|Commande $object
+	 * @param $action
+	 * @param $hookmanager
 	 * @return int
 	 */
-	public function beforeBodyClose($parameters)
+	public function addMoreActionsButtons($parameters, &$object, &$action, $hookmanager)
 	{
 		global $langs, $action, $user;
 		$TContexts = explode(':', $parameters['context']);
@@ -575,7 +577,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
-			$id = GETPOSTINT('id');
+			$id = $object->id;
 			$form = new Form($this->db);
 
 			if (in_array('propalcard', $TContexts)) {
@@ -586,7 +588,17 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$permissionToAdd = $user->hasRight('invoice', 'creer'); // Perms for invoice
 			}
 
-			$massActionButton = MassAction::getMassActionButton($permissionToAdd, $form);
+			$status = $object->status;
+			$enableCheckboxes = 0;
+
+			if(
+				($status == Propal::STATUS_DRAFT ||
+				$status == Facture::STATUS_DRAFT ||
+				$status == Commande::STATUS_DRAFT) && $permissionToAdd
+			) {
+				$massActionButton = MassAction::getMassActionButton($form);
+				$enableCheckboxes = 1;
+			}
 
 			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form);
 
@@ -596,12 +608,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				var massActionButton = <?php echo json_encode($massActionButton); ?>;
 
-				var permissionToAdd = <?php echo $permissionToAdd; ?>;
+				var enableCheckboxes = <?php echo $enableCheckboxes; ?>;
 
 				var formConfirm = <?php echo json_encode($formConfirm) ?>;
 
 				function showCheckboxes() {
-					if (permissionToAdd) {
+					if (enableCheckboxes) {
 						var count = 0;
 
 						// Pour chaque tr, je veux une checkbox dans le td sauf si ce n'est pas une ligne (par exemple le form d'ajout en bas)

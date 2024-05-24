@@ -64,7 +64,7 @@ MassActionSalesPersonHelp=<b>Ajouter :</b> ajoutera les commerciaux sélectionn�
 #
 EditMargin=Editer la marge
 EditQty=Editer la quantité
-Cut=Découper
+MassActionCut=Découper
 MassActionConfirmEdit=Confirmation de modification en masse
 MassActionConfirmEditQuantity=Êtes-vous sûr de vouloir modifier la quantité en masse pour les %s lignes?
 MassActionConfirmEditMargin=Êtes-vous sûr de vouloir modifier la marge en masse pour les %s lignes?
