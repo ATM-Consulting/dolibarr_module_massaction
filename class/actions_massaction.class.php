@@ -502,6 +502,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				$TErrors = array();
 
+				$quantity = null;
+				$marge_tx = null;
+
 				if ($action == 'edit_quantity') {
 					$quantity = GETPOST('quantity', 'alpha');
 
