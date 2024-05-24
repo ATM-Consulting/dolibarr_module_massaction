@@ -438,16 +438,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 */
 	public function doActions($parameters, &$object, &$action, $hookmanager)
 	{
+
 		global $langs, $user;
+		$langs->load('massaction@massaction');
 
 		$TContexts = explode(':', $parameters['context']);
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
 
-		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
-
-		if (!empty($commonContexts)) {
-
-			$langs->load('massaction@massaction');
+		if(in_array('propalcard', $TContexts) || in_array('ordercard', $TContexts)) {
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
@@ -467,7 +464,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					$index = array_search($selectedLine, $TRowIds);
 
-					if (in_array('ordercard', $TContexts)) {
+					if(in_array('ordercard', $TContexts)) {
 						$resDelete = $object->deleteline($user, $selectedLine);
 					} else {
 						$resDelete = $object->deleteline($selectedLine);
@@ -486,12 +483,112 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->rollback();
 					$TErrors[] = $this->db->lasterror();
 					setEventMessages('Errors', $TErrors, 'errors');
-					dol_syslog(get_class($this) . "::doActions - delete_lines : Transaction not successful" . $this->db->lasterror(), LOG_ERR);
+					dol_syslog(get_class($this)."::doActions - delete_lines : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
 				}
 
 				$action = '';
 
 			}
+
+//			if ($action == 'edit_margin' && $confirm == 'yes') {
+//
+//				$TRowIds = array_column($object->lines, 'rowid');
+//
+//				$TErrors = [];
+//
+//				$marge_tx = GETPOST('marge_tx', 'alpha');
+//
+//				if(!is_numeric($marge_tx) || ((!is_float($marge_tx) || !is_numeric($marge_tx)) && floatval($marge_tx) == 0)) {
+//					$TErrors[] = $langs->trans('ErrorMarginAlpha');
+//				}
+//
+//				$marge_tx = floatval($marge_tx);
+//
+//				$this->db->begin();
+//
+//				foreach ($TSelectedLines as $selectedLine) {
+//					$selectedLine = intval($selectedLine);
+//
+//					$index = array_search($selectedLine, $TRowIds);
+//
+//					$rowid = $selectedLine;
+//					$quantity = $object->lines[$index]->qty;
+//					$remise_percent = $object->lines[$index]->remise_percent;
+//					$txtva = $object->lines[$index]->tva_tx;
+//					$txlocaltax1 = $object->lines[$index]->localtax1_tx;
+//					$txlocaltax2 = $object->lines[$index]->localtax2_tx;
+//					$desc = $object->lines[$index]->desc;
+//					$price_base_type = 'HT';
+//					$info_bits = $object->lines[$index]->info_bits;
+//					$special_code = $object->lines[$index]->special_code;
+//					$fk_parent_line = $object->lines[$index]->fk_parent_line;
+//					$skip_update_total = $object->lines[$index]->skip_update_total;
+//					$fk_fournprice = $object->lines[$index]->fk_fournprice;
+//					$pa_ht = $object->lines[$index]->pa_ht;
+//					$label = $object->lines[$index]->product_label;
+//					$type = $object->lines[$index]->product_type;
+//					$date_start = $object->lines[$index]->date_start;
+//					$date_end = $object->lines[$index]->date_end;
+//					$array_options = $object->lines[$index]->array_options;
+//					$fk_unit = 0;
+//					$notrigger = 0;
+//					$ref_ext = $object->lines[$index]->ref_ext;
+//					$rang = $object->lines[$index]->rang;
+//
+//					$object->lines[$index]->marge_tx = $marge_tx;
+//
+//					$remise = (100 - $object->lines[$index]->remise_percent) / 100;
+//
+//					$pu_ht = $pa_ht * (1+($marge_tx/100));
+//
+//					$pu_ht = $pu_ht / ($remise);
+//
+//					if(empty(floatval($object->lines[$index]->subprice)) || empty(floatval($object->lines[$index]->pa_ht))) {
+//						$TErrors[] = $langs->trans('ErrorSubpriceOrPaHT', $index + 1);
+//					}
+//
+//					if(in_array('propalcard', $TContexts)) {
+//						/**
+//						 * @var Propal $object
+//						 */
+//						$res = $object->updateline(
+//							$rowid, $pu_ht, $quantity,
+//							$remise_percent, $txtva, $txlocaltax1, $txlocaltax2, $desc, $price_base_type, $info_bits,
+//							$special_code, $fk_parent_line, $skip_update_total, $fk_fournprice, $pa_ht, $label,
+//							$type, $date_start, $date_end, $array_options, $fk_unit, 0, $notrigger, $rang
+//						);
+//					} else {
+//						/**
+//						 * @var Commande $object
+//						 */
+//						$res = $object->updateline(
+//							$rowid, $desc, $pu_ht, $quantity,
+//							$remise_percent, $txtva, $txlocaltax1, $txlocaltax2, $price_base_type, $info_bits, $date_start, $date_end,
+//							$type, $fk_parent_line, $skip_update_total,
+//							$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $fk_unit, 0, $notrigger, $ref_ext,$rang
+//						);
+//					}
+//
+//
+//					if ($res < 0){
+//						$TErrors[] = $langs->trans('ErrorUpdateLine', $index + 1);
+//					}
+//				}
+//
+//				if (empty($TErrors)) {
+//					$this->db->commit();
+//					setEventMessage($langs->trans('ConfirmMassEditionMargin', count($TSelectedLines)));
+//					header('Location: ' . $_SERVER["PHP_SELF"] . '?id=' . $object->id);
+//				} else {
+//					$this->db->rollback();
+//					$TErrors[] = $this->db->lasterror();
+//					setEventMessages('Errors', $TErrors, 'errors');
+//					dol_syslog(get_class($this)."::doActions - edit_margin : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
+//				}
+//
+//				$action = '';
+//
+//			}
 
 			if (($action == 'edit_quantity' || $action == 'edit_margin') && $confirm == 'yes') {
 				require_once __DIR__ . '/massaction.class.php';
@@ -505,25 +602,26 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				if ($action == 'edit_quantity') {
 					$quantity = GETPOST('quantity', 'alpha');
 
-					// Vérifier que la valeur est numérique ou est exactement le caractère '0'
+					// Vérifiez que la valeur est numérique ou est exactement le caractère '0'
 					if (!is_numeric($quantity) && $quantity !== '0') {
 						$TErrors[] = $langs->trans('ErrorQtyAlpha');
 						$action = '';
 					} else {
-						// Convertir en float seulement si la validation est réussie
+						// Convertissez en float seulement si la validation est réussie
 						$quantity = floatval($quantity);
 					}
 				} else {
 					$marge_tx = GETPOST('marge_tx', 'alpha');
 
-					// Vérifier que la valeur est numérique ou est exactement le caractère '0'
+					// Vérifiez que la valeur est numérique ou est exactement le caractère '0'
 					if (!is_numeric($marge_tx) && $marge_tx !== '0') {
 						$TErrors[] = $langs->trans('ErrorMarginAlpha');
 					} else {
-						// Convertir en float seulement si la validation est réussie
+						// Convertissez en float seulement si la validation est réussie
 						$marge_tx = floatval($marge_tx);
 					}
 				}
+
 
 				if (in_array('ordercard', $TContexts)) {
 					if ($quantity < 0) {
@@ -541,11 +639,107 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				}
 
-				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
+				$massAction->handleErrors($TSelectedLines, $TErrors);
 
 				$action = '';
 
 			}
+
+//			if ($action == 'edit_quantity' && $confirm == 'yes') {
+//				$TRowIds = array_column($object->lines, 'rowid');
+//
+//				$TErrors = [];
+//
+//				$quantity = GETPOST('quantity', 'alpha');
+//
+//				if(!is_numeric($quantity) || ((!is_float($quantity) || !is_numeric($quantity)) && floatval($quantity) == 0)) {
+//					$TErrors[] = $langs->trans('ErrorQtyAlpha');
+//					$action = '';
+//				}
+//
+//				$quantity = floatval($quantity);
+//
+//				if (in_array('ordercard', $TContexts)) {
+//					if ($quantity < 0) {
+//						$TErrors[] = $langs->trans('ErrorQtyNegative');
+//						$action = '';
+//					}
+//				}
+//
+//				$this->db->begin();
+//
+//				foreach ($TSelectedLines as $selectedLine) {
+//					$selectedLine = intval($selectedLine);
+//
+//					$index = array_search($selectedLine, $TRowIds);
+//
+//					$rowid = $selectedLine;
+//					$pu = $object->lines[$index]->subprice;
+//					$remise_percent = $object->lines[$index]->remise_percent;
+//					$txtva = $object->lines[$index]->tva_tx;
+//					$txlocaltax1 = $object->lines[$index]->localtax1_tx;
+//					$txlocaltax2 = $object->lines[$index]->localtax2_tx;
+//					$desc = $object->lines[$index]->desc;
+//					$price_base_type = 'HT';
+//					$info_bits = $object->lines[$index]->info_bits;
+//					$special_code = $object->lines[$index]->special_code;
+//					$fk_parent_line = $object->lines[$index]->fk_parent_line;
+//					$skip_update_total = $object->lines[$index]->skip_update_total;
+//					$fk_fournprice = $object->lines[$index]->fk_fournprice;
+//					$pa_ht = $object->lines[$index]->pa_ht;
+//					$label = $object->lines[$index]->product_label;
+//					$type = $object->lines[$index]->product_type;
+//					$date_start = $object->lines[$index]->date_start;
+//					$date_end = $object->lines[$index]->date_end;
+//					$array_options = $object->lines[$index]->array_options;
+//					$fk_unit = 0;
+//					$notrigger = 0;
+//					$ref_ext = $object->lines[$index]->ref_ext;
+//					$rang = $object->lines[$index]->rang;
+//
+//
+//
+//					if(in_array('propalcard', $TContexts)) {
+//						/**
+//						 * @var $object Propal
+//						 */
+//						$res = $object->updateline(
+//							$rowid, $pu, $quantity, $remise_percent, $txtva,
+//							$txlocaltax1, $txlocaltax2, $desc, $price_base_type, $info_bits,
+//							$special_code, $fk_parent_line, $skip_update_total, $fk_fournprice, $pa_ht, $label,
+//							$type, $date_start, $date_end, $array_options, $fk_unit, $notrigger, $rang
+//						);
+//					} else {
+//						/**
+//						 * @var $object Commande
+//						 */
+//						$res = $object->updateline(
+//							$rowid, $desc, $pu, $quantity, $remise_percent, $txtva,
+//							$txlocaltax1, $txlocaltax2, $price_base_type, $info_bits,
+//							$date_start, $date_end, $type, $fk_parent_line, $skip_update_total, $fk_fournprice,
+//							$pa_ht, $label, $special_code, $array_options, $fk_unit, 0, $notrigger,
+//							$ref_ext, $rang
+//						);
+//					}
+//
+//					if ($res < 0){
+//						$TErrors[] = $langs->trans('ErrorUpdateLine', $index + 1);
+//					}
+//				}
+//
+//				if (empty($TErrors)) {
+//					$this->db->commit();
+//					setEventMessage($langs->trans('ConfirmMassEditionQty', count($TSelectedLines)));
+//					header('Location: ' . $_SERVER["PHP_SELF"] . '?id=' . $object->id);
+//				} else {
+//					$this->db->rollback();
+//					$TErrors[] = $this->db->lasterror();
+//					setEventMessages('Errors', $TErrors, 'errors');
+//					dol_syslog(get_class($this)."::doActions - edit_quantity : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
+//				}
+//
+//				$action = '';
+//			}
 
 		}
 
@@ -559,33 +753,89 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	public function beforeBodyClose($parameters)
 	{
 		global $langs, $action, $user;
+		$langs->load('massaction@massaction');
+
+		$form = new Form($this->db);
 		$TContexts = explode(':', $parameters['context']);
+		$selectedLines = GETPOST('selectedLines', 'alpha');
+		$TSelectedLines = explode(',', $selectedLines);
+		$id = GETPOSTINT('id');
 
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
 
-		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
-
-		if (!empty($commonContexts)) {
-			require_once __DIR__ . '/massaction.class.php';
-
-			$langs->load('massaction@massaction');
-
-			$selectedLines = GETPOST('selectedLines', 'alpha');
-			$TSelectedLines = explode(',', $selectedLines);
-			$id = GETPOSTINT('id');
-			$form = new Form($this->db);
+		if (in_array('propalcard', $TContexts) || in_array('ordercard', $TContexts)) {
+			$arrayOfMassActions = array();
 
 			if (in_array('propalcard', $TContexts)) {
 				$permissionToAdd = $user->hasRight('propal', 'creer'); // Perms for propal
-			} elseif (in_array('ordercard', $TContexts)) {
+			} else {
 				$permissionToAdd = $user->hasRight('order', 'creer'); // Perms for order
-			} elseif (in_array('invoicecard', $TContexts)) {
-				$permissionToAdd = $user->hasRight('invoice', 'creer'); // Perms for invoice
 			}
 
-			$massActionButton = MassAction::getMassActionButton($permissionToAdd, $form);
+			if($permissionToAdd) {
+				$arrayOfMassActions['cut'] = img_picto('', 'fa-scissors', 'class="pictofixedwidth"') . $langs->trans("Cut");
+				$arrayOfMassActions['preeditmargin'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditMargin");
+				$arrayOfMassActions['preeditquantity'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditQty");
+				$arrayOfMassActions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");
 
-			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form);
+				$massActionButton = $form->selectMassAction('', $arrayOfMassActions);
+			}
+
+
+			$nbrOfSelectedLines = count($TSelectedLines);
+
+			$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
+
+			if ($action == 'predelete') {
+				$formConfirm = $form->formconfirm(
+					$page,
+					$langs->trans("ConfirmMassDeletion"),
+					$langs->trans("ConfirmMassDeletionQuestion", $nbrOfSelectedLines),
+					"delete_lines",
+					null,
+					'',
+					0,
+					200, 500,
+					1
+				);
+			}
+			if ($action == "preeditquantity") {
+				$formConfirm = $form->formconfirm(
+					$page,
+					$langs->trans('MassActionConfirmEdit'),
+					$langs->trans('MassActionConfirmEditQuantity', $nbrOfSelectedLines),
+					'edit_quantity',
+					array(
+						array(
+							'label' => 'Quantité',
+							'type' => 'text',
+							'name' => 'quantity'
+						)
+					),
+					'',
+					0,
+					200, 500,
+					1
+				);
+			}
+			if ($action == 'preeditmargin') {
+				$formConfirm = $form->formconfirm(
+					$page,
+					$langs->trans('MassActionConfirmEdit'),
+					$langs->trans('MassActionConfirmEditMargin', $nbrOfSelectedLines),
+					'edit_margin',
+					array(
+						array(
+							'label' => 'Marge',
+							'type' => 'text',
+							'name' => 'marge_tx'
+						)
+					),
+					'',
+					0,
+					200, 500,
+					1
+				);
+			}
 
 			?>
 

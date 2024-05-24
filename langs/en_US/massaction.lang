@@ -70,9 +70,14 @@ MassActionConfirmEditQuantity=Are you sure you want to change the mass quantity 
 MassActionConfirmEditMargin=Are you sure you want to change the mass margin for %s lines?
 ConfirmMassEditionMargin=Margin has been modified on %s line(s)
 ConfirmMassEditionQty=Quantity has been modified on %s line(s)
-ErrorSubpriceOrPaHT=You must enter the price before tax and the cost price on line n°%s
+ErrorPaHT=You must enter the cost price on line n°%s
 ErrorUpdateLine=Error when modifying line n°%s
+ErrorDeleteLine=Error when deleting line n°%s
 
+ErrorQtyNegative=Quantity cannot be negative
+ErrorQtyAlpha=Quantity must be a number
+
+ErrorMarginAlpha=Margin must be a number
 
 #
 # Split
