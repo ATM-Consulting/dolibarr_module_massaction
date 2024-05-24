@@ -3,6 +3,7 @@
 ## Unreleased
 
 - NEW : Ajout d'un select pour actions en masse *22/05/2024* - 1.5.0
+  - Editer marge et quantité
   - Supprimer
   - Couper
 - NEW : Ajout de checkbox à droite des lignes propal pour actions en masse *22/05/2024* - 1.5.0
