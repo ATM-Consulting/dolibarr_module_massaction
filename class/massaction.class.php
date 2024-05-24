@@ -23,7 +23,7 @@ class MassAction {
 		global $langs;
 
 		$rowid = $this->object->lines[$index]->rowid;
-		$quantity = $quantity ?? $this->object->lines[$index]->qty;
+		$quantity = floatval($quantity) ?? $this->object->lines[$index]->qty;
 		$remise_percent = $this->object->lines[$index]->remise_percent;
 		$txtva = $this->object->lines[$index]->tva_tx;
 		$txlocaltax1 = $this->object->lines[$index]->localtax1_tx;
@@ -42,14 +42,16 @@ class MassAction {
 		$date_start = $this->object->lines[$index]->date_start;
 		$date_end = $this->object->lines[$index]->date_end;
 		$array_options = $this->object->lines[$index]->array_options;
-		$situation_percent = $this->object->lines[$index]->situation_percent;
+		$situation_percent = $this->object->lines[$index]->situation_percent ?? null;
 		$fk_unit = 0;
 		$notrigger = 0;
 		$ref_ext = $this->object->lines[$index]->ref_ext;
 		$rang = $this->object->lines[$index]->rang;
 
-		if($marge !== null && $marge !== '') $pu_ht = MassAction::getPuByMargin($this->object, $index, $marge, $pa_ht);
-		else $pu_ht = $subprice;
+		if($marge !== null && $marge !== '') {
+			$marge = floatval($marge);
+			$pu_ht = MassAction::getPuByMargin($this->object, $index, $marge, $pa_ht);
+		} else $pu_ht = $subprice;
 
 		switch ($this->object->element) {
 			case "propal":
