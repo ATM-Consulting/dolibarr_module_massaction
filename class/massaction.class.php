@@ -141,6 +141,8 @@ class MassAction {
 
 		$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
 
+		$formConfirm = '';
+
 		if ($action == 'predelete') {
 			$formConfirm = $form->formconfirm(
 				$page,
