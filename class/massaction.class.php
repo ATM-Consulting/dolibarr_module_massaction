@@ -141,8 +141,6 @@ class MassAction {
 
 		$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
 
-		$formConfirm = '';
-
 		if ($action == 'predelete') {
 			$formConfirm = $form->formconfirm(
 				$page,
@@ -155,8 +153,7 @@ class MassAction {
 				200, 500,
 				1
 			);
-		}
-		if ($action == "preeditquantity") {
+		} elseif ($action == "preeditquantity") {
 			$formConfirm = $form->formconfirm(
 				$page,
 				$langs->trans('MassActionConfirmEdit'),
@@ -174,8 +171,7 @@ class MassAction {
 				200, 500,
 				1
 			);
-		}
-		if ($action == 'preeditmargin') {
+		} elseif ($action == 'preeditmargin') {
 			$formConfirm = $form->formconfirm(
 				$page,
 				$langs->trans('MassActionConfirmEdit'),
@@ -193,6 +189,8 @@ class MassAction {
 				200, 500,
 				1
 			);
+		} else {
+			$formConfirm = null;
 		}
 
 		return $formConfirm;
