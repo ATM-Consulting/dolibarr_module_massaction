@@ -59,6 +59,10 @@ class MassAction {
 			$pu_ht = MassAction::getPuByMargin($this->object, $index, $marge, $pa_ht);
 		} else $pu_ht = $subprice;
 
+		if (!empty($this->TErrors)) {
+			return -1;
+		}
+
 		switch ($this->object->element) {
 			case "propal":
 				$resUpdate = $this->object->updateline(
@@ -145,6 +149,7 @@ class MassAction {
 
 		if (empty(floatval($object->lines[$index]->pa_ht))) {
 			$this->TErrors[] = $langs->trans('ErrorPaHT', $index + 1);
+			return -1;
 		}
 
 		return $pu_ht;
