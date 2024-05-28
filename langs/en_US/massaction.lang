@@ -73,7 +73,7 @@ ConfirmMassEditionQty=Quantity has been modified on %s line(s)
 ErrorPaHT=You must enter the cost price on line n°%s
 ErrorUpdateLine=Error when modifying line n°%s
 ErrorDeleteLine=Error when deleting line n°%s
-
+ErrorMassAction=Error(s) when trying to mass action
 ErrorQtyNegative=Quantity cannot be negative
 ErrorQtyAlpha=Quantity must be a number
 

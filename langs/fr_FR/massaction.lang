@@ -74,7 +74,7 @@ ConfirmMassDeletionLines=La suppression en masse a bien été effectuée sur %s 
 ErrorPaHT=Vous devez saisir le prix de revient sur la ligne n°%s
 ErrorUpdateLine=Erreur lors de la modification de la ligne n°%s
 ErrorDeleteLine=Erreur lors de la suppression de la ligne n°%s
-
+ErrorMassAction=Erreur(s) lors de l'action de masse
 ErrorQtyNegative=La quantité ne peut pas être négative
 ErrorQtyAlpha=La quantité doit être un nombre
 
