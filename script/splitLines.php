@@ -14,12 +14,18 @@
 	//if (! defined('CSRFCHECK_WITH_TOKEN'))     define('CSRFCHECK_WITH_TOKEN', '1');		// Force use of CSRF protection with tokens even for GET
 	//if (! defined('NOBROWSERNOTIF'))     		 define('NOBROWSERNOTIF', '1');				// Disable browser notification
 
-	require('../config.php');
+	if(is_file('../main.inc.php')) include("../main.inc.php");
+	else  if(is_file('../../../main.inc.php')) include("../../../main.inc.php");
+	else include("../../main.inc.php");
+
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 
 
+	/**
+	 * COPIE DU MODULE SPLIT
+	 */
 
 	$json = new stdClass();
 	$json->result = 0; // 0 nothing, 1 ok, -x errors
@@ -51,19 +57,7 @@
 
 	if(empty($entity))$entity=$conf->entity;
 
-
-
-	// TODO : gérer les droits car apparement c'est pas du tout géré ...
-//	if(empty($user->rights->xxxxx->write))
-//	{
-//		$json->result = -1;
-//		$json->msg = $langs->transnoentities('InsufficientRights');
-//	}
-
-
-
 	if($action == 'split' || $action=='copy') {
-
 		$json->result = 1; // vu que à la base il n'y a pas de gestion d'erreur sur ce script il faut partir du postula que c'est ok, perso ça me rends fou, mais on pourra le passer à -1 si erreurs plus tard... mais franchement c'est moche...
 
 		$fk_target = GETPOST('fk_element_split', 'int');
@@ -126,6 +120,11 @@
 					$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, $line->date_start, $line->date_end, 0, 0, $line->fk_remise_except, 'HT', 0, $line->product_type, -1, $line->special_code, 0, 0, 0, 0, $line->pa_ht, $line->label, $line->array_options, 100, 0, $line->fk_unit);
 				}
 
+				if ($newLineId < 0) {
+					setEventMessage('Error', $langs->trans('SplitKo'));
+					header('Location: ' . $_SERVER["PHP_SELF"]);
+				}
+
 
 				if(!empty($conf->nomenclature) && $conf->nomenclature->enabled && in_array($element, array('propal', 'commande'))) {
 					// nomenclature de la ligne source
@@ -142,14 +141,11 @@
 		else
 		{
 
-			if((float)DOL_VERSION >= 10.0){
-				if ($object->element == 'commande' || $object->element == 'propal' ){
-					$id_new = $object->createFromClone($user, (int)GETPOST('socid'));
-				}else{
-					$id_new = $object->createFromClone($user, $object->id);
-				}
+			if ($object->element == 'commande' || $object->element == 'propal' ){
+				$id_new = $object->createFromClone($user, (int)GETPOST('socid'));
+			}else{
+				$id_new = $object->createFromClone($user, $object->id);
 			}
-			else $id_new = $object->createFromClone((int)GETPOST('socid'));
 
 
 			if ($id_new > 0)
@@ -169,16 +165,24 @@
 						$json->log[] = "Suppresion ligne $k $lineid";
 							if ($object->element == 'commande' ){
 								// commande
-								$new_object->deleteline($user,$lineid);
+								$resDelete = $new_object->deleteline($user,$lineid);
 							} else {
 								//propal || facture
-								$new_object->deleteline($lineid);
+								$resDelete = $new_object->deleteline($lineid);
+							}
+
+							if($resDelete < 0) {
+								setEventMessage('Error', $langs->trans('SplitKoDel'));
+								header('Location: ' . $_SERVER["PHP_SELF"]);
 							}
 					}
 					else{
 						$json->log[] = "ok $k $lineid";
 					}
 				}
+			} else {
+				setEventMessage('Error', $langs->trans('SplitKo'));
+				header('Location: ' . $_SERVER["PHP_SELF"]);
 			}
 		}
 
@@ -223,8 +227,10 @@
 				}
 
 
-				if ($resDel<0) {
+				if ($resDel < 0) {
 					$errors++;
+					setEventMessage('Error', $langs->trans('SplitKoDel'));
+					header('Location: ' . $_SERVER["PHP_SELF"]);
 				}
 			}
 		}

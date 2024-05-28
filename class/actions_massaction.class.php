@@ -446,58 +446,38 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
 		if (!empty($commonContexts)) {
+			require_once __DIR__ . '/massaction.class.php';
 
 			$langs->load('massaction@massaction');
+			$massAction = new MassAction($this->db, $object);
+
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
 
-			$confirm = GETPOST('confirm');
+			$confirm = GETPOST('confirm', 'alpha');
 
 			if ($action == 'delete_lines' && $confirm == 'yes') {
-
 				$TRowIds = array_column($object->lines, 'rowid');
 
-				$TErrors = [];
+				$TErrors = array();
 
 				$this->db->begin();
 
 				foreach ($TSelectedLines as $selectedLine) {
-					$selectedLine = intval($selectedLine);
+					$index = array_search(intval($selectedLine), $TRowIds);
 
-					$index = array_search($selectedLine, $TRowIds);
-
-					if (in_array('ordercard', $TContexts)) {
-						$resDelete = $object->deleteline($user, $selectedLine);
-					} else {
-						$resDelete = $object->deleteline($selectedLine);
-					}
-
-					if ($resDelete < 0) {
-						$TErrors[] = $langs->trans('ErrorDeleteLine', $index + 1);
-					}
+					$massAction->deleteLine($index, $selectedLine);
 
 				}
 
-				if (empty($TErrors)) {
-					$this->db->commit();
-					setEventMessage($langs->trans('ConfirmMassDeletionLines', count($TSelectedLines)));
-				} else {
-					$this->db->rollback();
-					$TErrors[] = $this->db->lasterror();
-					setEventMessages('Errors', $TErrors, 'errors');
-					dol_syslog(get_class($this) . "::doActions - delete_lines : Transaction not successful" . $this->db->lasterror(), LOG_ERR);
-				}
+				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
 
 				$action = '';
 
 			}
 
 			if (($action == 'edit_quantity' || $action == 'edit_margin') && $confirm == 'yes') {
-				require_once __DIR__ . '/massaction.class.php';
-
-				$massAction = new MassAction($this->db, $object);
-
 				$TRowIds = array_column($object->lines, 'rowid');
 
 				$TErrors = array();
@@ -511,14 +491,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					// Vérifier que la valeur est numérique ou est exactement le caractère '0'
 					if (!is_numeric($quantity) && $quantity !== '0') {
 						$TErrors[] = $langs->trans('ErrorQtyAlpha');
-						$action = '';
 					} else {
 						// Convertir en float seulement si la validation est réussie
 						$quantity = floatval($quantity);
 
 						if($quantity < 0) {
 							$TErrors[] = $langs->trans('ErrorQtyNegative');
-							$action = '';
 						}
 					}
 				} else {
@@ -535,11 +513,19 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				$this->db->begin();
 
-				foreach ($TSelectedLines as $selectedLine) {
-					$index = array_search($selectedLine, $TRowIds);
+				if (empty($TErrors)) {
+					foreach ($TSelectedLines as $selectedLine) {
+						$index = array_search(intval($selectedLine), $TRowIds);
 
-					$massAction->updateLine($index, $quantity, $marge_tx);
+						$resUpdate = $massAction->updateLine($index, $quantity, $marge_tx);
 
+					}
+				}
+
+				if($resUpdate < 0) {
+					$this->db->rollback();
+				} else {
+					$this->db->commit();
 				}
 
 				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
@@ -664,7 +650,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					var currentAction = "<?php echo $action ?>";
 
-					if (formConfirm != null) {
+					if (formConfirm != '') {
 						toShow = formConfirm;
 					} else {
 						toShow = massActionButton;
@@ -690,7 +676,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin') {
 						$(".checkforselect").each(function () {
 							var checkboxValue = $(this).val();
-							console.log(checkboxValue);
 							if (TSelectedLines.includes(checkboxValue)) {
 								$(this).prop('checked', true);
 							}
@@ -754,7 +739,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		// TODO make it work on invoices and orders before adding this button
 
-		if(in_array('ordercard', $TContexts) || in_array('propalcard', $TContexts) /*|| in_array('invoicecard',$contexts)*/) {
+		if(in_array('ordercard', $TContexts) || in_array('propalcard', $TContexts) || in_array('invoicecard', $TContexts)) {
 
 			$rightCreate = method_exists($user,'hasRight') ? $user->hasRight($object->element,'create') : $user->rights->{$object->element}->creer;
 			$rightWrite = method_exists($user,'hasRight') ? $user->hasRight($object->element,'write') : $user->rights->{$object->element}->write;
@@ -765,15 +750,19 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$selectedLines = GETPOST('selectedLines', 'alpha');
 			}
 
-			if(GETPOST('actionSplitDelete') == 'ok') {
+			$actionSplitDelete = GETPOST('actionSplitDelete', 'alpha');
+			$actionSplit = GETPOST('actionSplit', 'alpha');
+			$actionSplitCopy = GETPOST('actionSplitCopy', 'alpha');
+
+			if($actionSplitDelete == 'ok') {
 				setEventMessage($langs->trans('SplitDeleteOk'));
 			}
-			else if(GETPOST('actionSplit') == 'ok') {
+			else if($actionSplit == 'ok') {
 				$url = GETPOST('new_url');
 				if (!empty($url)) $url = '- '.$url;
 				setEventMessage($langs->trans('SplitOk', $url));
 			}
-			else if(GETPOST('actionSplitCopy') == 'ok') {
+			else if($actionSplitCopy == 'ok') {
 				$url = GETPOST('new_url');
 				if (!empty($url)) $url = '- '.$url;
 				setEventMessage($langs->trans('SplitCopyOk', $url));
@@ -783,16 +772,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				if($object->element=='facture')$idvar = 'facid';
 				else $idvar='id';
 				if($object->element == 'propal') {
-					if((float)DOL_VERSION >= 4.0) $fiche = '/comm/propal/card.php';
-					else $fiche = '/comm/propal.php';
+					$fiche = '/comm/propal/card.php';
 				}
 				else if($object->element == 'commande') {
-					if(floatval(DOL_VERSION) >= 3.7) $fiche = '/commande/card.php';
-					else $fiche = '/commande/fiche.php';
+					$fiche = '/commande/card.php';
 				}
 				else if($object->element == 'facture') {
-					if(floatval(DOL_VERSION) >= 6.0) $fiche = '/compta/facture/card.php';
-					else $fiche = '/compta/facture.php';
+					$fiche = '/compta/facture/card.php';
 				}
 
 				$token = function_exists('newToken')?newToken():$_SESSION['newtoken'];
@@ -814,19 +800,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 									,width:'80%'
 									,modal: true
 									,buttons: [
-										//{
-										//	text: "<?php //echo $langs->transnoentities('SimplyDelete', $object->ref); ?>//",
-										//	click: function() {
-										//
-										//		$('#splitform input[name=action]').val('delete');
-										//
-										//		$.post('<?php //echo dol_buildpath('/massaction/script/splitLines.php',1) ?>//', $('#splitform').serialize(), function() {
-										//			document.location.href="<?php //echo dol_buildpath($fiche,1).'?id='.$object->id.'&actionSplitDelete=ok&token='.$token; ?>//";
-										//		});
-										//
-										//		$( this ).dialog( "close" );
-										//	}
-										//},
 										{
 											text: "<?php echo $langs->transnoentities('SimplyCopy'); ?>",
 											title: "<?php echo $langs->transnoentities('SimplyCopyTitle'); ?>",

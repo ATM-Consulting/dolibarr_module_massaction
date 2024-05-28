@@ -14,13 +14,15 @@
 	//if (! defined('CSRFCHECK_WITH_TOKEN'))     define('CSRFCHECK_WITH_TOKEN', '1');		// Force use of CSRF protection with tokens even for GET
 	//if (! defined('NOBROWSERNOTIF'))     		 define('NOBROWSERNOTIF', '1');				// Disable browser notification
 
-	require('../config.php');
+	if(is_file('../main.inc.php')) include("../main.inc.php");
+	else  if(is_file('../../../main.inc.php')) include("../../../main.inc.php");
+	else include("../../main.inc.php");
 
 	require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
-	dol_include_once('/massaction/lib/massaction.lib.php');
+	require_once __DIR__ . '/../lib/massaction.lib.php';
 
 	$element = GETPOST('element', 'alphanohtml');
 	$id = GETPOST('id', 'int');
@@ -67,11 +69,11 @@
 	<table width="100%" class="noborder">
 	<tr class="liste_titre nodrag nodrop">
 		<td>Description</td>
-		<td align="right" width="50">TVA</td>
-		<td align="right" width="80">P.U. HT</td>
-		<td align="right" width="50">Qté</td>
-		<td align="right" width="50">Réduc.</td>
-		<td align="right" width="80">Total HT</td>
+		<td align="right" width="50"><?php $langs->trans('TVA'); ?></td>
+		<td align="right" width="80"><?php $langs->trans('UnitPriceHT'); ?></td>
+		<td align="right" width="50"><?php $langs->trans('Qty'); ?></td>
+		<td align="right" width="50"><?php $langs->trans('Reduction'); ?></td>
+		<td align="right" width="80"><?php $langs->trans('TotalHT'); ?></td>
 		<td align="center" width="50"><?php echo $langs->trans('MoveThisLines') ?></td>
 
 	</tr>
@@ -83,53 +85,55 @@
 
 	$TSelectedLines = explode(',',$selectedLines);
 
-	foreach ($TSelectedLines as $selectedLine) {
-		$index = array_search($selectedLine, $TRowIds);
+	if (!empty($TSelectedLines)) {
+		foreach ($TSelectedLines as $selectedLine) {
+			$index = array_search($selectedLine, $TRowIds);
 
-		$k = $index;
+			$k = $index;
 
-		$line = $object->lines[$index];
+			$line = $object->lines[$index];
 
-		if($line->fk_product>0) {
-			$prod=new Product($db);
-			$prod->fetch($line->fk_product);
+			if($line->fk_product>0) {
+				$prod=new Product($db);
+				$prod->fetch($line->fk_product);
 
-			$text = $prod->getNomUrl(1).' - '.$prod->label;
-			$desc = dol_htmlentitiesbr($line->desc);
-			$label = $form->textwithtooltip($text,$desc,3);
+				$text = $prod->getNomUrl(1).' - '.$prod->label;
+				$desc = dol_htmlentitiesbr($line->desc);
+				$label = $form->textwithtooltip($text,$desc,3);
+			}
+			else{
+				$label = !empty($line->desc) ? $line->desc : $line->label;
+			}
+
+
+			$lineid = empty($line->id) ? $line->rowid : $line->id;
+
+			$class=($class=='impair') ? 'pair':'impair';
+
+			if($line->product_type==9) {
+				?>
+				<tr class="<?php echo $class; ?>">
+					<td colspan="6" style="font-weight: bold;"><?php echo $label ?></td>
+					<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
+				</tr>
+				<?php
+
+			}
+			else{
+				?>
+				<tr class="<?php echo $class; ?>">
+					<td><?php echo $label ?></td>
+					<td align="right"><?php echo round($line->tva_tx,2) ?>%</td>
+					<td align="right"><?php echo price(empty($line->subprice)?$line->price:$line->subprice,0,'',1,-1,-1,$conf->currency); ?></td>
+					<td align="right"><?php echo $line->qty ?></td>
+					<td align="right"><?php echo round($line->remise_percent,2) ?>%</td>
+					<td align="right"><?php echo price($line->total_ht,0,'',1,-1,-1,$conf->currency); ?></td>
+					<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
+				</tr>
+				<?php
+			}
+
 		}
-		else{
-			$label = !empty($line->desc) ? $line->desc : $line->label;
-		}
-
-
-		$lineid = empty($line->id) ? $line->rowid : $line->id;
-
-		$class=($class=='impair') ? 'pair':'impair';
-
-		if($line->product_type==9) {
-			?>
-			<tr class="<?php echo $class; ?>">
-				<td colspan="6" style="font-weight: bold;"><?php echo $label ?></td>
-				<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
-			</tr>
-			<?php
-
-		}
-		else{
-			?>
-			<tr class="<?php echo $class; ?>">
-				<td><?php echo $label ?></td>
-				<td align="right"><?php echo round($line->tva_tx,2) ?>%</td>
-				<td align="right"><?php echo price(empty($line->subprice)?$line->price:$line->subprice,0,'',1,-1,-1,$conf->currency); ?></td>
-				<td align="right"><?php echo $line->qty ?></td>
-				<td align="right"><?php echo round($line->remise_percent,2) ?>%</td>
-				<td align="right"><?php echo price($line->total_ht,0,'',1,-1,-1,$conf->currency); ?></td>
-				<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
-			</tr>
-			<?php
-		}
-
 	}
 
 	?>

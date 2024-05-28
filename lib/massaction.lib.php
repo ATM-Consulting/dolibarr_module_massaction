@@ -85,7 +85,7 @@ function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
 
 	if($element == 'propal') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'propal p';
 	elseif($element == 'commande') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'commande p';
-	elseif($element == 'facture') $sql = 'SELECT p.rowid, p.ref,  p.total, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'facture p';
+	elseif($element == 'facture') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'facture p';
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (p.fk_soc = s.rowid)';
 
 	$sql .= ' WHERE p.entity = '.$entity;
@@ -109,6 +109,7 @@ function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
 	else
 	{
 		dol_print_error($db);
+		dol_syslog('massaction.lib.php::errorDb ' . $db->lasterror(), LOG_ERR);
 	}
 
 	return $form->selectarray('fk_element_split', $TElement, '', 0, 0, 0, '', 0, 0, 0, '', '', 1);

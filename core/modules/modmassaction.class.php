@@ -95,7 +95,6 @@ class modmassaction extends DolibarrModules
 //				'data' => array(
 //					'main',
 //				),
-				'propalcard',
 				'globalcard'
 			)
 		);

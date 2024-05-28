@@ -18,12 +18,18 @@ class MassAction {
 	}
 
 
-	public function updateLine($index, $quantity, $marge = '')
+	/**
+	 * @param int $index
+	 * @param float $quantity
+	 * @param float|null $marge
+	 * @return int
+	 */
+	public function updateLine(int $index, ?float $quantity, ?float $marge = null): int
 	{
 		global $langs;
 
 		$rowid = $this->object->lines[$index]->rowid;
-		$quantity = floatval($quantity) ?? $this->object->lines[$index]->qty;
+		$quantity = $quantity ?? $this->object->lines[$index]->qty;
 		$remise_percent = $this->object->lines[$index]->remise_percent;
 		$txtva = $this->object->lines[$index]->tva_tx;
 		$txlocaltax1 = $this->object->lines[$index]->localtax1_tx;
@@ -55,7 +61,7 @@ class MassAction {
 
 		switch ($this->object->element) {
 			case "propal":
-				$res = $this->object->updateline(
+				$resUpdate = $this->object->updateline(
 					$rowid, $pu_ht, $quantity,
 					$remise_percent, $txtva, $txlocaltax1, $txlocaltax2, $desc, $price_base_type, $info_bits,
 					$special_code, $fk_parent_line, $skip_update_total, $fk_fournprice, $pa_ht, $label,
@@ -63,7 +69,7 @@ class MassAction {
 				);
 				break;
 			case "commande":
-				$res = $this->object->updateline(
+				$resUpdate = $this->object->updateline(
 					$rowid, $desc, $pu_ht, $quantity,
 					$remise_percent, $txtva, $txlocaltax1, $txlocaltax2, $price_base_type, $info_bits, $date_start, $date_end,
 					$type, $fk_parent_line, $skip_update_total,
@@ -71,23 +77,61 @@ class MassAction {
 				);
 				break;
 			case "facture":
-				$res = $this->object->updateline(
+				$resUpdate = $this->object->updateline(
 					$rowid, $desc, $pu_ht, $quantity,
 					$remise_percent, $date_start, $date_end, $txtva, $txlocaltax1, $txlocaltax2, $price_base_type, $info_bits,
 					$type, $fk_parent_line, $skip_update_total,
 					$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $situation_percent, $fk_unit, 0, $notrigger, $ref_ext,$rang
 				);
+				break;
 			default:
 				break;
 		}
 
-		if ($res < 0){
+		if ($resUpdate < 0){
 			$this->TErrors[] = $langs->trans('ErrorUpdateLine', $index + 1);
 		}
 
+		return $resUpdate;
+
 	}
 
-	private function getPuByMargin($object, $index, $marge_tx, $pa_ht)
+	/**
+	 * @param int $index
+	 * @param int $selectedLine
+	 * @return int
+	 */
+	public function deleteLine(int $index, int $selectedLine): int
+	{
+		global $user, $langs;
+
+		switch ($this->object->element) {
+			case "commande":
+				$resDelete = $this->object->deleteline($user, $selectedLine);
+				break;
+			case "facture":
+			case "propal":
+				$resDelete = $this->object->deleteline($selectedLine);
+				break;
+			default:
+				break;
+		}
+
+		if ($resDelete < 0) {
+			$this->TErrors = $langs->trans('ErrorDeleteLine', $index + 1);
+		}
+
+		return $resDelete;
+	}
+
+	/**
+	 * @param CommonObject $object
+	 * @param int $index
+	 * @param float $marge_tx
+	 * @param float $pa_ht
+	 * @return float
+	 */
+	private function getPuByMargin(CommonObject $object, int $index, float $marge_tx, float $pa_ht): float
 	{
 		global $langs;
 
@@ -99,43 +143,54 @@ class MassAction {
 
 		$pu_ht = $pu_ht / ($remise);
 
-		if(empty(floatval($object->lines[$index]->pa_ht))) {
+		if (empty(floatval($object->lines[$index]->pa_ht))) {
 			$this->TErrors[] = $langs->trans('ErrorPaHT', $index + 1);
 		}
 
 		return $pu_ht;
 	}
 
-	public function handleErrors($TSelectedLines, $TErrors, $action)
+	/**
+	 * @param array $TSelectedLines
+	 * @param array $TErrors
+	 * @param string $action
+	 * @return void
+	 * @throws Exception
+	 */
+	public function handleErrors(array $TSelectedLines, array $TErrors, string $action): void
 	{
 		global $langs;
 
 		$this->TErrors = array_merge($this->TErrors, $TErrors);
 
 		if (empty($this->TErrors)) {
-			$this->db->commit();
 			if ($action == 'edit_quantity') {
 				$confirmMsg = $langs->trans('ConfirmMassEditionQty', count($TSelectedLines));
 			} elseif ($action == 'edit_margin') {
 				$confirmMsg = $langs->trans('ConfirmMassEditionMargin', count($TSelectedLines));
+			} elseif ($action == 'delete_lines') {
+				$confirmMsg = $langs->trans('ConfirmMassDeletionLines', count($TSelectedLines));
 			}
 			setEventMessage($confirmMsg);
 			header('Location: ' . $_SERVER["PHP_SELF"] . '?id=' . $this->object->id);
 		} else {
-			$this->db->rollback();
 			if(!empty($this->db->lasterror())) {
 				$this->TErrors[] = $this->db->lasterror();
 			}
 			setEventMessages('Errors', $this->TErrors, 'errors');
-			if ($action == 'edit_quantity') {
-				dol_syslog(get_class($this)."::class MassAction - edit_quantity : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
-			} elseif ($action == 'edit_margin') {
-				dol_syslog(get_class($this)."::class MassAction - edit_margin : Transaction not successful" .$this->db->lasterror(), LOG_ERR);
-			}
+			$TErrorsForMsg = implode("\r\n", $this->TErrors);
+			dol_syslog(get_class($this)."::class MassAction - ".$action." : Transaction not successful" .$this->db->lasterror() . " TErrors : " . $TErrorsForMsg, LOG_ERR);
 		}
 	}
 
-	public static function getFormConfirm($action, $TSelectedLines, $id, $form)
+	/**
+	 * @param string $action
+	 * @param array $TSelectedLines
+	 * @param int $id
+	 * @param Form $form
+	 * @return string
+	 */
+	public static function getFormConfirm(string $action, array $TSelectedLines, int $id, Form $form): string
 	{
 		global $langs;
 
@@ -144,61 +199,61 @@ class MassAction {
 		$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
 
 		if ($action == 'predelete') {
-			$formConfirm = $form->formconfirm(
-				$page,
-				$langs->trans("ConfirmMassDeletion"),
-				$langs->trans("ConfirmMassDeletionQuestion", $nbrOfSelectedLines),
-				"delete_lines",
-				null,
-				'',
-				0,
-				200, 500,
-				1
-			);
+
+			$actionInFormConfirm = 'delete_lines';
+			$title = $langs->trans("ConfirmMassDeletion");
+			$question = $langs->trans("ConfirmMassDeletionQuestion", $nbrOfSelectedLines);
+			$formQuestion = null;
+
 		} elseif ($action == "preeditquantity") {
-			$formConfirm = $form->formconfirm(
-				$page,
-				$langs->trans('MassActionConfirmEdit'),
-				$langs->trans('MassActionConfirmEditQuantity', $nbrOfSelectedLines),
-				'edit_quantity',
+
+			$actionInFormConfirm = 'edit_quantity';
+			$title = $langs->trans('MassActionConfirmEdit');
+			$question = $langs->trans('MassActionConfirmEditQuantity', $nbrOfSelectedLines);
+			$formQuestion = array(
 				array(
-					array(
-						'label' => 'Quantité',
-						'type' => 'text',
-						'name' => 'quantity'
-					)
-				),
-				'',
-				0,
-				200, 500,
-				1
+					'label' => 'Quantité',
+					'type' => 'text',
+					'name' => 'quantity'
+				)
 			);
+
 		} elseif ($action == 'preeditmargin') {
-			$formConfirm = $form->formconfirm(
-				$page,
-				$langs->trans('MassActionConfirmEdit'),
-				$langs->trans('MassActionConfirmEditMargin', $nbrOfSelectedLines),
-				'edit_margin',
+
+			$actionInFormConfirm = 'edit_margin';
+			$title = $langs->trans('MassActionConfirmEdit');
+			$question = $langs->trans('MassActionConfirmEditMargin', $nbrOfSelectedLines);
+			$formQuestion = array(
 				array(
-					array(
-						'label' => 'Marge',
-						'type' => 'text',
-						'name' => 'marge_tx'
-					)
-				),
-				'',
-				0,
-				200, 500,
-				1
+					'label' => 'Marge',
+					'type' => 'text',
+					'name' => 'marge_tx'
+				)
 			);
-		} else {
-			$formConfirm = null;
+
 		}
+
+		if(empty($actionInFormConfirm) || empty($title) || empty($question)) {
+			return '';
+		}
+
+		$formConfirm = $form->formconfirm(
+			$page, $title, $question,
+			$actionInFormConfirm, $formQuestion,
+			'',
+			0,
+			200, 500,
+			1
+		);
 
 		return $formConfirm;
 	}
 
-	public static function getMassActionButton($form)
+	/**
+	 * @param Form $form
+	 * @return string
+	 */
+	public static function getMassActionButton(Form $form): string
 	{
 		global $langs;
 
