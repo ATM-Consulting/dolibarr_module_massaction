@@ -470,8 +470,14 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				foreach ($TSelectedLines as $selectedLine) {
 					$index = array_search(intval($selectedLine), $TRowIds);
 
-					$massAction->deleteLine($index, $selectedLine);
+					$resDelete = $massAction->deleteLine($index, $selectedLine);
 
+				}
+
+				if($resDelete < 0) {
+					$this->db->rollback();
+				} else {
+					$this->db->commit();
 				}
 
 				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
