@@ -118,8 +118,7 @@
 				}
 
 				if ($newLineId < 0) {
-					setEventMessage('Error', $langs->trans('SplitKo'));
-					header('Location: ' . $_SERVER["PHP_SELF"]);
+					dol_syslog('splitLines::error - addline. NEW line id : ' . $newLineId, LOG_ERR);
 				}
 
 
@@ -169,8 +168,7 @@
 							}
 
 							if($resDelete < 0) {
-								setEventMessage('Error', $langs->trans('SplitKoDel'));
-								header('Location: ' . $_SERVER["PHP_SELF"]);
+								dol_syslog('splitLines::error - deleteline. RES delete : ' . $resDelete, LOG_ERR);
 							}
 					}
 					else{
@@ -178,8 +176,7 @@
 					}
 				}
 			} else {
-				setEventMessage('Error', $langs->trans('SplitKo'));
-				header('Location: ' . $_SERVER["PHP_SELF"]);
+				dol_syslog('splitLines::error - createFromClone. ID New : ' . $id_new, LOG_ERR);
 			}
 		}
 
@@ -226,8 +223,7 @@
 
 				if ($resDel < 0) {
 					$errors++;
-					setEventMessage('Error', $langs->trans('SplitKoDel'));
-					header('Location: ' . $_SERVER["PHP_SELF"]);
+					dol_syslog('splitLines::error - split or delete. Res delete : ' . $resDelete, LOG_ERR);
 				}
 			}
 		}
