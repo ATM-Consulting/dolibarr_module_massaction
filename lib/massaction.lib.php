@@ -79,8 +79,6 @@ function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
 {
 	global $db,$form,$conf, $langs;
 
-	if($element == 'propal') require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
-
 	$TElement = array(0 => '');
 
 	if($element == 'propal') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'propal p';
@@ -89,7 +87,7 @@ function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (p.fk_soc = s.rowid)';
 
 	$sql .= ' WHERE p.entity = '.$entity;
-	$sql .= ' AND p.fk_statut = '.(property_exists('Propal', 'STATUS_DRAFT') ? Propal::STATUS_DRAFT : 0);
+	$sql .= ' AND p.fk_statut = 0';
 
 	if(! empty($TExcludeId)) $sql .= ' AND p.rowid NOT IN ('.implode(',', $TExcludeId).')';
 	$sql .= ' ORDER BY p.ref';

@@ -52,9 +52,6 @@
 	$object = new $classname($db);
 	$object->fetch($id);
 
-	$old_object = new $element($db);
-	$old_object->fetch($id);
-
 	if(empty($entity))$entity=$conf->entity;
 
 	if($action == 'split' || $action=='copy') {
@@ -75,7 +72,7 @@
 				if (!empty($TMoveLine)) // on ne copie les coefs que si y a des lignes à copier...
 				{
 					$coef = new TNomenclatureCoefObject;
-					$TCoef = $coef->loadCoefObject($PDOdb, $old_object, $element, $old_object->id);
+					$TCoef = $coef->loadCoefObject($PDOdb, $object, $element, $object->id);
 					if (!empty($TCoef))
 					{
 						$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'nomenclature_coef_object
@@ -104,7 +101,7 @@
 
 			foreach ($TMoveLine as $k => $line)
 			{
-				$line = $old_object->lines[$k];
+				$line = $object->lines[$k];
 
 				$id_origin_line = $line->id;
 				if($object->element == 'propal') {
@@ -129,7 +126,7 @@
 				if(!empty($conf->nomenclature) && $conf->nomenclature->enabled && in_array($element, array('propal', 'commande'))) {
 					// nomenclature de la ligne source
 					$n = new TNomenclature;
-					$n->loadByObjectId($PDOdb, $line->id, $element, true, $line->fk_product, $line->qty, $old_object->id);
+					$n->loadByObjectId($PDOdb, $line->id, $element, true, $line->fk_product, $line->qty, $object->id);
 
 					if($n->rowid == 0 && (count($n->TNomenclatureDet) + count($n->TNomenclatureWorkstation)) > 0) {
 						// Le cas d'une nomenclature non chargée : ça ne sert à rien de copier la Nomenclature...
@@ -213,17 +210,17 @@
 	if ($action == 'split' || $action == 'delete' )
 	{
 		$errors = 0;
-		foreach($old_object->lines as $k=>$line) {
+		foreach($object->lines as $k=>$line) {
 			$lineid = empty($line->id) ? $line->rowid : $line->id;
 			if(isset($TMoveLine[$k])) {
 				$json->log[] = "Suppresion ligne old $lineid";
 
-				if ($old_object->element == 'commande' ){
+				if ($object->element == 'commande' ){
 					// commande
-					$resDel = $old_object->deleteline($user,$lineid);
+					$resDel = $object->deleteline($user,$lineid);
 				} else {
 					//propal || facture
-					$resDel = $old_object->deleteline($lineid);
+					$resDel = $object->deleteline($lineid);
 				}
 
 
