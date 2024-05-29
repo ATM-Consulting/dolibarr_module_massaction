@@ -289,7 +289,7 @@ class MassAction {
 		$arrayOfMassActions = array();
 
 		$arrayOfMassActions['cut'] = img_picto('', 'fa-scissors', 'class="pictofixedwidth"') . $langs->trans("MassActionCut");
-		if (isModEnabled('margin')) {
+		if (isModEnabled('margin') && getDolGlobalInt('DISPLAY_MARGIN_RATES')) {
 			$arrayOfMassActions['preeditmargin'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditMargin");
 		}
 		$arrayOfMassActions['preeditquantity'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditQty");
