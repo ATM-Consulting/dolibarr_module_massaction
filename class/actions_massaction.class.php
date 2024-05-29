@@ -741,10 +741,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$selectedLines = GETPOST('selectedLines', 'alpha');
 			}
 
-			$actionSplitDelete = GETPOST('actionSplitDelete', 'alpha');
-			$actionSplit = GETPOST('actionSplit', 'alpha');
-			$actionSplitCopy = GETPOST('actionSplitCopy', 'alpha');
-
 			$TActions = [
 				'actionSplitDelete' => 'SplitDeleteOk',
 				'actionSplit' => 'SplitOk',
@@ -757,6 +753,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$url = GETPOST('new_url', 'alpha');
 					$messageParam = !empty($url) ? "- $url" : "";
 					setEventMessage($langs->trans($message, $messageParam));
+					break;
 				}
 			}
 
