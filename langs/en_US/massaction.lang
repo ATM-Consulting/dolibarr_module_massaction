@@ -58,3 +58,38 @@ MassActionReplace=Replace
 MassActionLinkSalesPersonSuccess=Sales representatives updated on selected thirdparties
 MassActionDelete=Remove
 MassActionSalesPersonHelp=<b>Add :</b> will add selected sales representatives to the selected thirdparties<br><br><b>Replace :</b> will remove all sales representatives linkes to selected thirdparties, then adds selected sales representatives instead<br><br><b>Remove :</b> will remove selected sales representatives from selected thirdparties
+
+#
+# Cards
+#
+EditMargin=Edit margin
+EditQty=Edit quantity
+MassActionCut=Cut
+MassActionConfirmEdit=Mass edit confirmation
+MassActionConfirmEditQuantity=Are you sure you want to change the mass quantity for %s lines?
+MassActionConfirmEditMargin=Are you sure you want to change the mass margin for %s lines?
+ConfirmMassEditionMargin=Margin has been modified on %s line(s)
+ConfirmMassEditionQty=Quantity has been modified on %s line(s)
+ErrorPaHT=You must enter the cost price on line n°%s
+ErrorUpdateLine=Error when modifying line n°%s
+ErrorDeleteLine=Error when deleting line n°%s
+ErrorMassAction=Error(s) when trying to mass action
+ErrorQtyNegative=Quantity cannot be negative
+ErrorQtyAlpha=Quantity must be a number
+
+ErrorMarginAlpha=Margin must be a number
+
+#
+# Split
+#
+Module104430Name = Split proposal
+Module104430Desc = Allow you to split line from a proposal to another.
+SplitIt=Split it
+SplitThisDocument=Split lines of this document
+SimplyDelete=Simply delete lines
+SplitOk=Split ok %s
+SplitDeleteOk=Delete lines ok
+SimplyCopyTitle=If a proposal is selected, then the copy will done into this one
+SplitItTitle=If a proposal is selected, then the move will done into this one
+Or=Or
+PropalTarget=Commercial proposition target

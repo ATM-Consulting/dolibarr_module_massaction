@@ -58,3 +58,52 @@ MassActionReplace=Remplacer
 MassActionLinkSalesPersonSuccess=Commerciaux mis à jour sur les fiches tiers sélectionnées
 MassActionDelete=Retirer
 MassActionSalesPersonHelp=<b>Ajouter :</b> ajoutera les commerciaux sélectionnés ci-dessus aux tiers sélectionnés de la liste<br><br><b>Remplacer :</b> retirera tous les commerciaux associés aux tiers sélectionnés de la liste puis ajoutera les commerciaux sélectionnés ci-dessus à la place<br><br><b>Retirer :</b> retirera les commerciaux sélectionné ci-dessus des tiers sélectionnés de la liste
+
+#
+# Cards
+#
+EditMargin=Editer la marge
+EditQty=Editer la quantité
+MassActionCut=Découper
+MassActionConfirmEdit=Confirmation de modification en masse
+MassActionConfirmEditQuantity=Êtes-vous sûr de vouloir modifier la quantité en masse pour les %s lignes?
+MassActionConfirmEditMargin=Êtes-vous sûr de vouloir modifier la marge en masse pour les %s lignes?
+ConfirmMassEditionMargin=La marge a bien été modifiée sur %s ligne(s)
+ConfirmMassEditionQty=La quantité a bien été modifiée sur %s ligne(s)
+ConfirmMassDeletionLines=La suppression en masse a bien été effectuée sur %s ligne(s)
+ErrorPaHT=Vous devez saisir le prix de revient sur la ligne n°%s
+ErrorUpdateLine=Erreur lors de la modification de la ligne n°%s
+ErrorDeleteLine=Erreur lors de la suppression de la ligne n°%s
+ErrorMassAction=Erreur(s) lors de l'action de masse
+ErrorQtyNegative=La quantité ne peut pas être négative
+ErrorQtyAlpha=La quantité doit être un nombre
+
+ErrorMarginAlpha=La marge doit être un nombre
+
+#
+# Split
+#
+Module104430Name = Split
+Module104430Desc = Permet de découper des propositions commerciales
+SplitIt=Découper
+SplitThisDocument=Séparer les lignes de ce document
+SimplyDelete=Supprimer les lignes du document %s
+SimplyCopy=Copier les lignes dans un nouveau document %s
+SplitOk=Les lignes sélectionnées ont été déplacées dans un nouveau document %s
+SplitDeleteOk=Les lignes sélectionnées ont été supprimées du document
+SplitCopyOk=Les lignes sélectionnées ont été copiées dans un nouveau document %s
+SplitKo=Erreur lors d'ajout des lignes dans un nouveau document
+SplitKoDel=Erreur lors de la suppression des lignes
+MoveThisLines=Sel.
+EntityTo=Entité de destination
+SimplyCopyTitle=Si un document cible est sélectionné, alors la copie se fera directement dans celui-ci
+SplitItTitle=Si un document cible est sélectionné, alors le déplacement se fera directement dans celui-ci
+Or=Ou
+Target=Cible
+splitAbout = A propos du module Split
+EmptyTMoveLine=Pas de ligne sélectionnée
+TVA=TVA
+UnitPriceHT=P.U. HT
+Qty=Qté
+Reduction=Réduc.
+TotalHT=Total HT

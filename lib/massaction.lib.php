@@ -73,3 +73,42 @@ function getUrlToMailingCibles($elementtype, $object){
 
 	return $urltoreturn;
 }
+
+
+function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
+{
+	global $db,$form,$conf, $langs;
+
+	$TElement = array(0 => '');
+
+	if($element == 'propal') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'propal p';
+	elseif($element == 'commande') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'commande p';
+	elseif($element == 'facture') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, '.((float)DOL_VERSION >= 5.0 ? 'p.multicurrency_code' : "'$conf->currency'").' as currency_code FROM '.MAIN_DB_PREFIX.'facture p';
+	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (p.fk_soc = s.rowid)';
+
+	$sql .= ' WHERE p.entity = '.$entity;
+	$sql .= ' AND p.fk_statut = 0';
+
+	if(! empty($TExcludeId)) $sql .= ' AND p.rowid NOT IN ('.implode(',', $TExcludeId).')';
+	$sql .= ' ORDER BY p.ref';
+
+	dol_syslog('Lib module SPLIT for action "getHtmlSelectPropals" launched by ' . __FILE__ . ' [SQL]= '.$sql, LOG_DEBUG);
+	$resql = $db->query($sql);
+	if ($resql)
+	{
+		while ($row = $db->fetch_object($resql))
+		{
+			if(empty($TElement[$row->rowid])) $TElement[$row->rowid] = '';
+			$TElement[$row->rowid] .= $row->ref.' - ';
+			if(!empty($row->total_ht)) $TElement[$row->rowid] .= price($row->total_ht, 0, $langs, 1, -1, -1, $row->currency_code);
+			$TElement[$row->rowid] .= $row->nom.' ('.$row->code_client.')';
+		}
+	}
+	else
+	{
+		dol_print_error($db);
+		dol_syslog('massaction.lib.php::errorDb ' . $db->lasterror(), LOG_ERR);
+	}
+
+	return $form->selectarray('fk_element_split', $TElement, '', 0, 0, 0, '', 0, 0, 0, '', '', 1);
+}
