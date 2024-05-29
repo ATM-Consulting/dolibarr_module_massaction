@@ -489,35 +489,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			if (($action == 'edit_quantity' || $action == 'edit_margin') && $confirm == 'yes') {
 				$TRowIds = array_column($object->lines, 'rowid');
 
-				$TErrors = array();
-
 				$quantity = null;
 				$marge_tx = null;
 
 				if ($action == 'edit_quantity') {
 					$quantity = GETPOST('quantity', 'alpha');
-
-					// Vérifier que la valeur est numérique ou est exactement le caractère '0'
-					if (!is_numeric($quantity) && $quantity !== '0') {
-						$TErrors[] = $langs->trans('ErrorQtyAlpha');
-					} else {
-						// Convertir en float seulement si la validation est réussie
-						$quantity = floatval($quantity);
-
-						if($quantity < 0) {
-							$TErrors[] = $langs->trans('ErrorQtyNegative');
-						}
-					}
-				} else {
+					$TErrors = MassAction::checkFields($action, $quantity);
+				} elseif ($action == 'edit_margin') {
 					$marge_tx = GETPOST('marge_tx', 'alpha');
-
-					// Vérifier que la valeur est numérique ou est exactement le caractère '0'
-					if (!is_numeric($marge_tx) && $marge_tx !== '0') {
-						$TErrors[] = $langs->trans('ErrorMarginAlpha');
-					} else {
-						// Convertir en float seulement si la validation est réussie
-						$marge_tx = floatval($marge_tx);
-					}
+					$TErrors = MassAction::checkFields($action, $marge_tx);
 				}
 
 				$this->db->begin();
@@ -587,9 +567,11 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$enableCheckboxes = 0;
 
 			if(
-				($status == Propal::STATUS_DRAFT ||
-				$status == Facture::STATUS_DRAFT ||
-				$status == Commande::STATUS_DRAFT) && $permissionToAdd
+				(
+					($object->element == 'propal' && $status == Propal::STATUS_DRAFT) ||
+					($object->element == 'facture' && $status == Facture::STATUS_DRAFT) ||
+					($object->element == 'commande' && $status == Commande::STATUS_DRAFT))
+				&& $permissionToAdd
 			) {
 				$massActionButton = MassAction::getMassActionButton($form);
 				$enableCheckboxes = 1;
@@ -763,19 +745,21 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$actionSplit = GETPOST('actionSplit', 'alpha');
 			$actionSplitCopy = GETPOST('actionSplitCopy', 'alpha');
 
-			if($actionSplitDelete == 'ok') {
-				setEventMessage($langs->trans('SplitDeleteOk'));
+			$TActions = [
+				'actionSplitDelete' => 'SplitDeleteOk',
+				'actionSplit' => 'SplitOk',
+				'actionSplitCopy' => 'SplitCopyOk',
+			];
+
+			foreach ($TActions as $key => $message) {
+				$value = GETPOST($key, 'alpha');
+				if ($value == 'ok') {
+					$url = GETPOST('new_url', 'alpha');
+					$messageParam = !empty($url) ? "- $url" : "";
+					setEventMessage($langs->trans($message, $messageParam));
+				}
 			}
-			else if($actionSplit == 'ok') {
-				$url = GETPOST('new_url');
-				if (!empty($url)) $url = '- '.$url;
-				setEventMessage($langs->trans('SplitOk', $url));
-			}
-			else if($actionSplitCopy == 'ok') {
-				$url = GETPOST('new_url');
-				if (!empty($url)) $url = '- '.$url;
-				setEventMessage($langs->trans('SplitCopyOk', $url));
-			}
+
 			if ($displayButton) {
 
 				if($object->element=='facture')$idvar = 'facid';

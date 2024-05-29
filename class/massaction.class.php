@@ -155,6 +155,30 @@ class MassAction {
 		return $pu_ht;
 	}
 
+	public static function checkFields($action, $field)
+	{
+
+		global $langs;
+
+		$TErrors = array();
+
+		$errorMessage = $action == 'edit_quantity' ? 'ErrorQtyAlpha' : 'ErrorMarginAlpha';
+
+		if (!is_numeric($field) && $field !== '0') {
+			$TErrors[] = $langs->trans($errorMessage);
+		} else {
+			// Convertir en float seulement si la validation est réussie
+			$field = floatval($field);
+
+			if($action == 'edit_quantity' && $field < 0) {
+				$TErrors[] = $langs->trans('ErrorQtyNegative');
+			}
+		}
+
+		return $TErrors;
+
+	}
+
 	/**
 	 * @param array $TSelectedLines
 	 * @param array $TErrors
