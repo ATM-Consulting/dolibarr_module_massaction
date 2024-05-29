@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## Release 1.5
+
 - NEW : Ajout d'un select pour actions en masse *22/05/2024* - 1.5.0
   - Editer marge et quantité
   - Supprimer
