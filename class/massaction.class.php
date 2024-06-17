@@ -222,6 +222,10 @@ class MassAction {
 	public static function getFormConfirm(string $action, array $TSelectedLines, int $id, Form $form): string
 	{
 		global $langs;
+		$question = null;
+		$title = null;
+		$actionInFormConfirm = null;
+		$formQuestion = null;
 
 		$nbrOfSelectedLines = count($TSelectedLines);
 
@@ -238,7 +242,7 @@ class MassAction {
 
 			$actionInFormConfirm = 'edit_quantity';
 			$title = $langs->trans('MassActionConfirmEdit');
-			$question = $langs->trans('MassActionConfirmEditQuantity', $nbrOfSelectedLines);
+
 			$formQuestion = array(
 				array(
 					'label' => 'Quantité',
@@ -262,17 +266,16 @@ class MassAction {
 
 		}
 
-		if(empty($actionInFormConfirm) || empty($title) || empty($question)) {
+		if(empty($actionInFormConfirm) || empty($title) ) {
 			return '';
 		}
 
 		$formConfirm = $form->formconfirm(
-			$page, $title, $question,
-			$actionInFormConfirm, $formQuestion,
-			'',
+			$page, $title, $question, $actionInFormConfirm, $formQuestion,
+			'1', // Vu avec CDP Benoit . préselectionner sur oui
 			0,
 			200, 500,
-			1
+			0
 		);
 
 		return $formConfirm;
@@ -285,10 +288,10 @@ class MassAction {
 	public static function getMassActionButton(Form $form): string
 	{
 		global $langs;
-
+		$nameIcon = ((float) DOL_VERSION <= 18.0) ? 'fa-scissors' : 'fa-cut';
 		$arrayOfMassActions = array();
 
-		$arrayOfMassActions['cut'] = img_picto('', 'fa-scissors', 'class="pictofixedwidth"') . $langs->trans("MassActionCut");
+		$arrayOfMassActions['cut'] = img_picto('', $nameIcon, 'class="pictofixedwidth"') . $langs->trans("MassActionCut");
 		if (isModEnabled('margin') && getDolGlobalInt('DISPLAY_MARGIN_RATES')) {
 			$arrayOfMassActions['preeditmargin'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditMargin");
 		}
