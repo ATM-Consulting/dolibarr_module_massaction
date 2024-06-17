@@ -3,7 +3,9 @@
 ## Unreleased
 
 ## Release 1.5
-
+- FIX : ICON siccors  in > 18.0  - *17/06/2024* - 1.5.1
+  - remove question  in massaction confirm
+  - set main handler in hook section 
 - NEW : Ajout d'un select pour actions en masse *22/05/2024* - 1.5.0
   - Editer marge et quantité
   - Supprimer
