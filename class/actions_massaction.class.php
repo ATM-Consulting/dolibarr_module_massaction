@@ -385,7 +385,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if ($conf->mailing->enabled && $user->hasRight('mailing', 'creer')) {
+			if (isset($conf->mailing) && $conf->mailing->enabled && $user->hasRight('mailing', 'creer')) {
 				$label = '<span class="fa fa-envelope-o paddingrightonly"></span> ' . $langs->trans("MassActionLinktoMailing");
 				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}
