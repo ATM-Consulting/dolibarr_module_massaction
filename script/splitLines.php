@@ -65,7 +65,7 @@
 
 			// copie des coefs de la propal source si la propal de destination en est dépourvu
 
-			if(!empty($conf->nomenclature) && $conf->nomenclature->enabled && in_array($element, array('propal', 'commande'))) {
+			if(!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
 				dol_include_once('/nomenclature/class/nomenclature.class.php');
 				$PDOdb = new TPDOdb;
 
@@ -122,7 +122,7 @@
 				}
 
 
-				if(!empty($conf->nomenclature) && $conf->nomenclature->enabled && in_array($element, array('propal', 'commande'))) {
+				if(!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
 					// nomenclature de la ligne source
 					$n = new TNomenclature;
 					$n->loadByObjectId($PDOdb, $line->id, $element, true, $line->fk_product, $line->qty, $object->id);
