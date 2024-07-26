@@ -1,6 +1,7 @@
 # Changelog for massaction
 
 ## Unreleased
+- NEW : COMPAT V20 - *26/07/2024* - 1.6.0
 
 ## Release 1.5
 - FIX : ICON siccors  in > 18.0  - *17/06/2024* - 1.5.1
