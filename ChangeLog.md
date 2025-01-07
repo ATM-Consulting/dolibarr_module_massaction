@@ -1,9 +1,9 @@
 # Changelog for massaction
 
 ## Unreleased
-- NEW : COMPAT V21 - *06/12/2024* - 1.7.0
 
 ## Release 1.6
+- FIX : COMPAT V21 - *06/12/2024* - 1.6.1
 - NEW : COMPAT V20 - *26/07/2024* - 1.6.0
 
 ## Release 1.5
