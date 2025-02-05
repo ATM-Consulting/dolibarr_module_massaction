@@ -72,7 +72,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$toprint = '';
 
 		// Action en masse d'ajout de destinataires à un e-mailing, choix de l'e-mailing
-		if($massaction == 'linktomailing' && $conf->mailing->enabled && $user->hasRight('mailing', 'creer')
+		if($massaction == 'linktomailing' && isModEnabled('mailing') && $user->hasRight('mailing', 'creer')
 			&& (in_array('thirdpartylist', $TContext)
 				|| in_array('contactlist', $TContext)
 				|| in_array('memberlist', $TContext)
@@ -251,7 +251,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 
 		// Action en masse d'ajout de destinataires à un e-mailing
-		if ($action == 'confirm_linktomailing' && $confirm == 'yes' && $conf->mailing->enabled && $user->hasRight('mailing', 'creer') &&
+		if ($action == 'confirm_linktomailing' && $confirm == 'yes' && isModEnabled('mailing') && $user->hasRight('mailing', 'creer') &&
 			(in_array('thirdpartylist', $TContext)
 				|| in_array('contactlist', $TContext)
 				|| in_array('memberlist', $TContext)
@@ -385,7 +385,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
 
-			if ($conf->mailing->enabled && $user->hasRight('mailing', 'creer')) {
+			if (isModEnabled('mailing') && $user->hasRight('mailing', 'creer')) {
 				$label = '<span class="fa fa-envelope-o paddingrightonly"></span> ' . $langs->trans("MassActionLinktoMailing");
 				$this->resprints .= '<option value="linktomailing" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 			}

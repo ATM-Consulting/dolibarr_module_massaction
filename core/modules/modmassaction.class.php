@@ -61,7 +61,7 @@ class modmassaction extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "ModuleMassActionDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.5.2';
+		$this->version = '1.6.1';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -88,7 +88,7 @@ class modmassaction extends DolibarrModules
 	 	//							'js' => array('/massaction/js/massaction.js'),          // Set this to relative path of js file if module must load a js on all pages
 		//							'hooks' => array('hookcontext1','hookcontext2')  	// Set here all hooks context managed by module
 		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
-		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@massaction')) // Set here all workflow context managed by module
+		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'isModEnabled("module1") && isModEnabled("module2")', 'picto'=>'yourpicto@massaction')) // Set here all workflow context managed by module
 		//                        );
 		$this->module_parts = array(
 			'hooks' => array(
@@ -110,7 +110,7 @@ class modmassaction extends DolibarrModules
 		$this->requiredby = array();	// List of modules id to disable if this one is disabled
 		$this->conflictwith = array();	// List of modules id this module is in conflict with
 		$this->phpmin = array(7,0);					// Minimum version of PHP required by module
-		$this->need_dolibarr_version = array(15,0);	// Minimum version of Dolibarr required by module
+		$this->need_dolibarr_version = array(16,0);	// Minimum version of Dolibarr required by module
 		$this->langfiles = array("massaction@massaction");
 
 		// Constants
@@ -147,14 +147,14 @@ class modmassaction extends DolibarrModules
         $this->tabs = array();
 
         // Dictionaries
-	    if (! isset($conf->massaction->enabled))
+	    if (! isModEnabled('massaction'))
         {
         	$conf->massaction=new stdClass();
         	$conf->massaction->enabled=0;
         }
 		$this->dictionaries=array();
         /* Example:
-        if (! isset($conf->massaction->enabled)) $conf->massaction->enabled=0;	// This is to avoid warnings
+       if (! isset($conf->massaction->enabled)) $conf->massaction->enabled=0; // This is to avoid warnings
         $this->dictionaries=array(
             'langs'=>'massaction@massaction',
             'tabname'=>array(MAIN_DB_PREFIX."table1",MAIN_DB_PREFIX."table2",MAIN_DB_PREFIX."table3"),		// List of tables we want to see into dictonnary editor
@@ -165,7 +165,7 @@ class modmassaction extends DolibarrModules
             'tabfieldvalue'=>array("code,label","code,label","code,label"),																				// List of fields (list of fields to edit a record)
             'tabfieldinsert'=>array("code,label","code,label","code,label"),																			// List of fields (list of fields for insert)
             'tabrowid'=>array("rowid","rowid","rowid"),																									// Name of columns with primary key (try to always name it 'rowid')
-            'tabcond'=>array($conf->massaction->enabled,$conf->massaction->enabled,$conf->massaction->enabled)												// Condition to show each dictionary
+            'tabcond'=>array(isModEnabled("massaction"),isModEnabled("massaction"),isModEnabled("massaction"))												// Condition to show each dictionary
         );
         */
 
@@ -184,22 +184,22 @@ class modmassaction extends DolibarrModules
 		// $this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		// $this->rights[$r][1] = 'Permision label';	// Permission label
 		// $this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		// $this->rights[$r][4] = 'level1';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
-		// $this->rights[$r][5] = 'level2';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		// $this->rights[$r][4] = 'level1';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
+		// $this->rights[$r][5] = 'level2';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
 		// $r++;
 /*
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		$this->rights[$r][1] = 'massaction_read';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
-		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
+		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
 		$r++;
 
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		$this->rights[$r][1] = 'massaction_write';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
-		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
+		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
 		$r++;
 */
 
@@ -218,8 +218,8 @@ class modmassaction extends DolibarrModules
 		//							'url'=>'/massaction/pagetop.php',
 		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 		//							'position'=>100,
-		//							'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->massaction->enabled' if entry must be visible if module is enabled.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massaction->level1->level2' if you want your menu with a permission rules
+		//							'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("massaction")' if entry must be visible if module is enabled.
+		//							'perms'=>'1',			                // Use 'perms'=>'$user->hasRight("massaction", "level1", "level2")' if you want your menu with a permission rules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
@@ -234,7 +234,7 @@ class modmassaction extends DolibarrModules
 		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 		//							'position'=>100,
 		//							'enabled'=>'$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->massaction->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->rights->massaction->level1->level2' if you want your menu with a permission rules
+		//							'perms'=>'1',			                // Use 'perms'=>'$user->hasRight("massaction", "level1", "level2")' if you want your menu with a permission rules
 		//							'target'=>'',
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
@@ -249,8 +249,8 @@ class modmassaction extends DolibarrModules
 			'url'=>'/massaction/list.php',
 			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("missionorder")' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);
@@ -265,8 +265,8 @@ class modmassaction extends DolibarrModules
 			'url'=>'/massaction/list.php',
 			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
-			'enabled'=>'$conf->massaction->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("missionorder")' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);
@@ -282,7 +282,7 @@ class modmassaction extends DolibarrModules
 			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);				                // 0=Menu for internal users, 1=external users, 2=both
@@ -299,7 +299,7 @@ class modmassaction extends DolibarrModules
 			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>0
 		);				                // 0=Menu for internal users, 1=external users, 2=both
