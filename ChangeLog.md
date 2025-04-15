@@ -3,6 +3,7 @@
 ## Unreleased
 
 ## Release 1.6
+- FIX : Using $this in non object context - *15/04/2025* - 1.6.2
 - FIX : COMPAT V21 - *06/12/2024* - 1.6.1
 - NEW : COMPAT V20 - *26/07/2024* - 1.6.0
 
