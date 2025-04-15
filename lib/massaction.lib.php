@@ -81,9 +81,9 @@ function getHtmlSelectElements($entity, $TExcludeId=array(), $element='propal')
 
 	$TElement = array(0 => '');
 
-	if($element == 'propal') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$this->db->prefix().'propal p';
-	elseif($element == 'commande') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$this->db->prefix().'commande p';
-	elseif($element == 'facture') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$this->db->prefix().'facture p';
+	if($element == 'propal') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$db->prefix().'propal p';
+	elseif($element == 'commande') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$db->prefix().'commande p';
+	elseif($element == 'facture') $sql = 'SELECT p.rowid, p.ref,  p.total_ht, s.nom, s.code_client, p.multicurrency_code as currency_code FROM '.$db->prefix().'facture p';
 	$sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'societe s ON (p.fk_soc = s.rowid)';
 
 	$sql .= ' WHERE p.entity = '.$entity;
