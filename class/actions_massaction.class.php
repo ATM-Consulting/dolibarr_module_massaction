@@ -630,7 +630,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$(document).ready(function () {
 
 					// Reset toutes les checkbox
-					$('input[type="checkbox"]').prop('checked', false);
+					$('input[type="checkbox"].checkforselect').prop('checked', false);
 
 					var action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF'] . '?id=' . $id, ENT_QUOTES, 'UTF-8'); ?>";
 
