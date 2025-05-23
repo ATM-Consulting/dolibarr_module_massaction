@@ -641,6 +641,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					var currentAction = "<?php echo $action ?>";
 
+					var toShow = '';
 					if (formConfirm != '') {
 						toShow = formConfirm;
 					} else {
