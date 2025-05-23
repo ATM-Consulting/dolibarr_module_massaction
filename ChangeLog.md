@@ -3,6 +3,7 @@
 ## Unreleased
 
 ## Release 1.6
+- FIX : DA026579 => fix undeclared variable toShow  - *23/05/2025* - 1.6.2
 - FIX : COMPAT V21 - *06/12/2024* - 1.6.1
 - NEW : COMPAT V20 - *26/07/2024* - 1.6.0
 
