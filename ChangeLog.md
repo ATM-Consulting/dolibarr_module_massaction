@@ -3,6 +3,7 @@
 ## Unreleased
 
 ## Release 1.6
+- FIX : Compat V22 - *02/10/2025* - 1.6.4
 - FIX : DA026579 => fix undeclared variable toShow  - *23/05/2025* - 1.6.3
 - FIX : Using $this in non object context - *15/04/2025* - 1.6.2
 - FIX : COMPAT V21 - *06/12/2024* - 1.6.1
