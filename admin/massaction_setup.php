@@ -97,6 +97,7 @@ if(!function_exists('setup_print_title')){
 setup_print_title("Parameters");
 // Example with a yes / no select
 setup_print_on_off('MASSACTION_AUTO_DOWNLOAD', $langs->trans('SetupAutoDownloadTitle') , $langs->trans('SetupAutoDownloadDesc'));
+setup_print_on_off('MASSACTION_AUTO_SEND_SUPPLIER_PROPAL', $langs->trans('SetupAutoSendSupplierPropal'));
 print '</table>';
 dol_fiche_end(-1);
 llxFooter();

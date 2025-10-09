@@ -50,6 +50,7 @@ NoDirectoryAvailable=Directory not available
 MassActionErrorGeneration=Generation error
 SetupAutoDownloadTitle=Auto Download
 SetupAutoDownloadDesc=Automatically download the generated zip archive
+SetupAutoSendSupplierPropal= Automatically send supplier proposal by email
 MassActionLinkSalesperson=Add sales representatives
 MassActionSalesPersonAction=What action do you want to apply ?
 MassActionSelectSalesPerson=Select one or several sales representatives
@@ -93,3 +94,20 @@ SimplyCopyTitle=If a proposal is selected, then the copy will done into this one
 SplitItTitle=If a proposal is selected, then the move will done into this one
 Or=Or
 PropalTarget=Commercial proposition target
+
+#
+# Supplier price request
+#
+MassActionCreateSupplierPriceTitle = Create a price request
+MassActionCreateSupplierPrice = Create a price request
+MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier invoice for the 1 line(s)?
+MassActionSelectSupplier = Select suppliers:
+MassActionSelectModelEmail = Select email template:
+MassActionErrorFailedToSendMailTo = Failed to send the email to supplier %s
+MassActionSupplierPriceRequestCreatedFor = Price request created for supplier %s: %s
+
+MassActionSupplierPriceRequest = Price request
+MassActionHello = Greetings,
+MassActionPleaseFindAttachedOurPriceRequest = You can find in attached files our price request.
+MassActionSincerely = Best reagards
+MassActionErrorNoSuppliersSelected = Please, select at least one supplier.

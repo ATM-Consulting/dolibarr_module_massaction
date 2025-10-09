@@ -61,7 +61,7 @@ class modmassaction extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "ModuleMassActionDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.6.4';
+		$this->version = '1.7.0';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -71,29 +71,11 @@ class modmassaction extends DolibarrModules
 		// If file is in module/img directory under name object_pictovalue.png, use this->picto='pictovalue@module'
 		$this->picto='massaction@massaction';
 
-		// Defined all module parts (triggers, login, substitutions, menus, css, etc...)
-		// for default path (eg: /massaction/core/xxxxx) (0=disable, 1=enable)
-		// for specific path of parts (eg: /massaction/core/modules/barcode)
-		// for specific css file (eg: /massaction/css/massaction.css.php)
-		//$this->module_parts = array(
-		//                        	'triggers' => 0,                                 	// Set this to 1 if module has its own trigger directory (core/triggers)
-		//							'login' => 0,                                    	// Set this to 1 if module has its own login method directory (core/login)
-		//							'substitutions' => 0,                            	// Set this to 1 if module has its own substitution function file (core/substitutions)
-		//							'menus' => 0,                                    	// Set this to 1 if module has its own menus handler directory (core/menus)
-		//							'theme' => 0,                                    	// Set this to 1 if module has its own theme directory (theme)
-		//                        	'tpl' => 0,                                      	// Set this to 1 if module overwrite template dir (core/tpl)
-		//							'barcode' => 0,                                  	// Set this to 1 if module has its own barcode directory (core/modules/barcode)
-		//							'models' => 0,                                   	// Set this to 1 if module has its own models directory (core/modules/xxx)
-		//							'css' => array('/massaction/css/massaction.css.php'),	// Set this to relative path of css file if module has its own css file
-	 	//							'js' => array('/massaction/js/massaction.js'),          // Set this to relative path of js file if module must load a js on all pages
-		//							'hooks' => array('hookcontext1','hookcontext2')  	// Set here all hooks context managed by module
-		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
-		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'isModEnabled("module1") && isModEnabled("module2")', 'picto'=>'yourpicto@massaction')) // Set here all workflow context managed by module
-		//                        );
 		$this->module_parts = array(
 			'hooks' => array(
 				'globalcard',
-				'main'
+				'main',
+				'emailElementlist',
 			)
 		);
 
@@ -120,30 +102,6 @@ class modmassaction extends DolibarrModules
 		// );
 		$this->const = array();
 
-		// Array to add new pages in new tabs
-		// Example: $this->tabs = array('objecttype:+tabname1:Title1:massaction@massaction:$user->rights->massaction->read:/massaction/mynewtab1.php?id=__ID__',  	// To add a new tab identified by code tabname1
-        //                              'objecttype:+tabname2:Title2:massaction@massaction:$user->rights->othermodule->read:/massaction/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2
-        //                              'objecttype:-tabname:NU:conditiontoremove');                                                     						// To remove an existing tab identified by code tabname
-		// where objecttype can be
-		// 'categories_x'	  to add a tab in category view (replace 'x' by type of category (0=product, 1=supplier, 2=customer, 3=member)
-		// 'contact'          to add a tab in contact view
-		// 'contract'         to add a tab in contract view
-		// 'group'            to add a tab in group view
-		// 'intervention'     to add a tab in intervention view
-		// 'invoice'          to add a tab in customer invoice view
-		// 'invoice_supplier' to add a tab in supplier invoice view
-		// 'member'           to add a tab in fundation member view
-		// 'opensurveypoll'	  to add a tab in opensurvey poll view
-		// 'order'            to add a tab in customer order view
-		// 'order_supplier'   to add a tab in supplier order view
-		// 'payment'		  to add a tab in payment view
-		// 'payment_supplier' to add a tab in supplier payment view
-		// 'product'          to add a tab in product view
-		// 'propal'           to add a tab in propal view
-		// 'project'          to add a tab in project view
-		// 'stock'            to add a tab in stock view
-		// 'thirdparty'       to add a tab in third party view
-		// 'user'             to add a tab in user view
         $this->tabs = array();
 
         // Dictionaries
@@ -153,175 +111,19 @@ class modmassaction extends DolibarrModules
         	$conf->massaction->enabled=0;
         }
 		$this->dictionaries=array();
-        /* Example:
-       if (! isset($conf->massaction->enabled)) $conf->massaction->enabled=0; // This is to avoid warnings
-        $this->dictionaries=array(
-            'langs'=>'massaction@massaction',
-            'tabname'=>array(MAIN_DB_PREFIX."table1",MAIN_DB_PREFIX."table2",MAIN_DB_PREFIX."table3"),		// List of tables we want to see into dictonnary editor
-            'tablib'=>array("Table1","Table2","Table3"),													// Label of tables
-            'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table1 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table2 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table3 as f'),	// Request to select fields
-            'tabsqlsort'=>array("label ASC","label ASC","label ASC"),																					// Sort order
-            'tabfield'=>array("code,label","code,label","code,label"),																					// List of fields (result of select to show dictionary)
-            'tabfieldvalue'=>array("code,label","code,label","code,label"),																				// List of fields (list of fields to edit a record)
-            'tabfieldinsert'=>array("code,label","code,label","code,label"),																			// List of fields (list of fields for insert)
-            'tabrowid'=>array("rowid","rowid","rowid"),																									// Name of columns with primary key (try to always name it 'rowid')
-            'tabcond'=>array(isModEnabled("massaction"),isModEnabled("massaction"),isModEnabled("massaction"))												// Condition to show each dictionary
-        );
-        */
 
         // Boxes
 		// Add here list of php file(s) stored in core/boxes that contains class to show a box.
         $this->boxes = array();			// List of boxes
-		// Example:
-		//$this->boxes=array(array(0=>array('file'=>'myboxa.php','note'=>'','enabledbydefaulton'=>'Home'),1=>array('file'=>'myboxb.php','note'=>''),2=>array('file'=>'myboxc.php','note'=>'')););
 
 		// Permissions
 		$this->rights = array();		// Permission array used by this module
 		$r=0;
 
-		// Add here list of permission defined by an id, a label, a boolean and two constant strings.
-		// Example:
-		// $this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		// $this->rights[$r][1] = 'Permision label';	// Permission label
-		// $this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		// $this->rights[$r][4] = 'level1';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		// $this->rights[$r][5] = 'level2';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		// $r++;
-/*
-		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'massaction_read';	// Permission label
-		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		$r++;
-
-		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'massaction_write';	// Permission label
-		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->hasRight("permkey", "level1", "level2"))
-		$r++;
-*/
-
 		// Main menu entries
 		$this->menu = array();			// List of menus to add
 		$r=0;
 
-		// Add here entries to declare new menus
-		//
-		// Example to declare a new Top Menu entry and its Left menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massaction',		// Put 0 if this is a single top menu or keep fk_mainmenu to give an entry on left
-		//							'type'=>'top',			                // This is a Top menu entry
-		//							'titre'=>'massaction top menu',
-		//							'mainmenu'=>'massaction',
-		//							'leftmenu'=>'massaction_left',			// This is the name of left menu for the next entries
-		//							'url'=>'/massaction/pagetop.php',
-		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-		//							'position'=>100,
-		//							'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("massaction")' if entry must be visible if module is enabled.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->hasRight("massaction", "level1", "level2")' if you want your menu with a permission rules
-		//							'target'=>'',
-		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
-		// $r++;
-		//
-		// Example to declare a Left Menu entry into an existing Top menu entry:
-		// $this->menu[$r]=array(	'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-		//							'type'=>'left',			                // This is a Left menu entry
-		//							'titre'=>'massaction left menu',
-		//							'mainmenu'=>'massaction',
-		//							'leftmenu'=>'massaction_left',			// Goes into left menu previously created by the mainmenu
-		//							'url'=>'/massaction/pagelevel2.php',
-		//							'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-		//							'position'=>100,
-		//							'enabled'=>'$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->massaction->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-		//							'perms'=>'1',			                // Use 'perms'=>'$user->hasRight("massaction", "level1", "level2")' if you want your menu with a permission rules
-		//							'target'=>'',
-		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
-		// $r++;
-
-/*
-		$this->menu[$r]=array(
-			'fk_menu'=>0,			                // Put 0 if this is a top menu
-			'type'=>'top',			                // This is a Top menu entry
-			'titre'=>$langs->trans('TopMenumassaction'),
-			'mainmenu'=>'massaction',
-			'leftmenu'=>'',
-			'url'=>'/massaction/list.php',
-			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position'=>100+$r,
-			'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("missionorder")' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
-			'target'=>'',
-			'user'=>0
-		);
-		$r++;
-
-		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massaction',			                // Put 0 if this is a top menu
-			'type'=>'left',			                // This is a Top menu entry
-			'titre'=>$langs->trans('TopMenumassaction'),
-			'mainmenu'=>'massaction',
-			'leftmenu'=>'massaction_left',
-			'url'=>'/massaction/list.php',
-			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position'=>100+$r,
-			'enabled'=>'isModEnabled("massaction")',	// Define condition to show or hide menu entry. Use 'isModEnabled("missionorder")' if entry must be visible if module is enabled.
-			'perms'=>'$user->rights->massaction->read',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
-			'target'=>'',
-			'user'=>0
-		);
-		$r++;
-
-		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type'=>'left',			                // This is a Left menu entry
-			'titre'=>$langs->trans('LeftMenumassactionCreate'),
-			'mainmenu'=>'massaction',
-			'leftmenu'=>'massaction_left_create',
-			'url'=>'/massaction/card.php?action=create',
-			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position'=>100+$r,
-			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
-			'target'=>'',
-			'user'=>0
-		);				                // 0=Menu for internal users, 1=external users, 2=both
-		$r++;
-
-
-		$this->menu[$r]=array(
-			'fk_menu'=>'fk_mainmenu=massaction,fk_leftmenu=massaction_left',		    // Use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
-			'type'=>'left',			                // This is a Left menu entry
-			'titre'=>$langs->trans('LeftMenumassactionList'),
-			'mainmenu'=>'massaction',
-			'leftmenu'=>'massaction_left_list',
-			'url'=>'/massaction/list.php',
-			'langs'=>'massaction@massaction',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
-			'position'=>100+$r,
-			'enabled'=> '$conf->massaction->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->massaction->write',			                // Use 'perms'=>'$user->hasRight("missionorder", "level1", "level2")' if you want your menu with a permission rules
-			'target'=>'',
-			'user'=>0
-		);				                // 0=Menu for internal users, 1=external users, 2=both
-		$r++;
-*/
-
-		// Exports
-		$r=1;
-
-		// Example:
-		// $this->export_code[$r]=$this->rights_class.'_'.$r;
-		// $this->export_label[$r]='CustomersInvoicesAndInvoiceLines';	// Translation key (used only if key ExportDataset_xxx_z not found)
-        // $this->export_enabled[$r]='1';                               // Condition to show export in list (ie: '$user->id==3'). Set to 1 to always show when module is enabled.
-		// $this->export_permission[$r]=array(array("facture","facture","export"));
-		// $this->export_fields_array[$r]=array('s.rowid'=>"IdCompany",'s.nom'=>'CompanyName','s.address'=>'Address','s.zip'=>'Zip','s.town'=>'Town','s.fk_pays'=>'Country','s.phone'=>'Phone','s.siren'=>'ProfId1','s.siret'=>'ProfId2','s.ape'=>'ProfId3','s.idprof4'=>'ProfId4','s.code_compta'=>'CustomerAccountancyCode','s.code_compta_fournisseur'=>'SupplierAccountancyCode','f.rowid'=>"InvoiceId",'f.facnumber'=>"InvoiceRef",'f.datec'=>"InvoiceDateCreation",'f.datef'=>"DateInvoice",'f.total'=>"TotalHT",'f.total_ttc'=>"TotalTTC",'f.tva'=>"TotalVAT",'f.paye'=>"InvoicePaid",'f.fk_statut'=>'InvoiceStatus','f.note'=>"InvoiceNote",'fd.rowid'=>'LineId','fd.description'=>"LineDescription",'fd.price'=>"LineUnitPrice",'fd.tva_tx'=>"LineVATRate",'fd.qty'=>"LineQty",'fd.total_ht'=>"LineTotalHT",'fd.total_tva'=>"LineTotalTVA",'fd.total_ttc'=>"LineTotalTTC",'fd.date_start'=>"DateStart",'fd.date_end'=>"DateEnd",'fd.fk_product'=>'ProductId','p.ref'=>'ProductRef');
-		// $this->export_entities_array[$r]=array('s.rowid'=>"company",'s.nom'=>'company','s.address'=>'company','s.zip'=>'company','s.town'=>'company','s.fk_pays'=>'company','s.phone'=>'company','s.siren'=>'company','s.siret'=>'company','s.ape'=>'company','s.idprof4'=>'company','s.code_compta'=>'company','s.code_compta_fournisseur'=>'company','f.rowid'=>"invoice",'f.facnumber'=>"invoice",'f.datec'=>"invoice",'f.datef'=>"invoice",'f.total'=>"invoice",'f.total_ttc'=>"invoice",'f.tva'=>"invoice",'f.paye'=>"invoice",'f.fk_statut'=>'invoice','f.note'=>"invoice",'fd.rowid'=>'invoice_line','fd.description'=>"invoice_line",'fd.price'=>"invoice_line",'fd.total_ht'=>"invoice_line",'fd.total_tva'=>"invoice_line",'fd.total_ttc'=>"invoice_line",'fd.tva_tx'=>"invoice_line",'fd.qty'=>"invoice_line",'fd.date_start'=>"invoice_line",'fd.date_end'=>"invoice_line",'fd.fk_product'=>'product','p.ref'=>'product');
-		// $this->export_sql_start[$r]='SELECT DISTINCT ';
-		// $this->export_sql_end[$r]  =' FROM ('.MAIN_DB_PREFIX.'facture as f, '.MAIN_DB_PREFIX.'facturedet as fd, '.MAIN_DB_PREFIX.'societe as s)';
-		// $this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'product as p on (fd.fk_product = p.rowid)';
-		// $this->export_sql_end[$r] .=' WHERE f.fk_soc = s.rowid AND f.rowid = fd.fk_facture';
-		// $this->export_sql_order[$r] .=' ORDER BY s.nom';
-		// $r++;
 	}
 
 	/**
@@ -338,6 +140,8 @@ class modmassaction extends DolibarrModules
 
 		define('INC_FROM_DOLIBARR',true);
 
+		$this->_add_email_template();
+
 		return $this->_init($sql, $options);
 	}
 
@@ -352,8 +156,59 @@ class modmassaction extends DolibarrModules
 	function remove($options='')
 	{
 		$sql = array();
-
+		$this->_remove_email_template();
 		return $this->_remove($sql, $options);
+	}
+
+	/**
+	 * Add the default email template for supplier proposals.
+	 *
+	 * @return void
+	 */
+	private function _add_email_template()
+	{
+		global $langs;
+
+		$langs->load('massaction@massaction');
+
+		$label = $langs->trans('MassActionSupplierPriceRequest');
+
+		// Check if the template already exists to avoid duplicates
+		$sqlCheck = "SELECT COUNT(*) as total FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
+		$res = $this->db->query($sqlCheck);
+		$obj = $this->db->fetch_object($res);
+
+		if ($obj->total == 0) {
+
+			$topic = $langs->transnoentities('MassActionSupplierPriceRequest') . ' __REF__';
+			$content = $langs->transnoentities('MassActionHello') . " __THIRDPARTY_NAME__,\n\n";
+			$content .= $langs->transnoentities('MassActionPleaseFindAttachedOurPriceRequest') . " __REF__.\n\n";
+			$content .= $langs->transnoentities('MassActionSincerely') . ",\n\n";
+			$content .= "__USER_SIGNATURE__";
+
+			$sql = "INSERT INTO " . $this->db->prefix() . "c_email_templates (entity, type_template, label, topic, content, active) VALUES (";
+			$sql .= (int) $conf->entity . ", ";
+			$sql .= "'supplier_proposal_send', ";
+			$sql .= "'" . $this->db->escape($label) . "', ";
+			$sql .= "'" . $this->db->escape($topic) . "', ";
+			$sql .= "'" . $this->db->escape($content) . "', ";
+			$sql .= "1";
+			$sql .= ")";
+
+			$this->db->query($sql);
+		}
+	}
+
+	/**
+	 * Remove the email template on module deactivation.
+	 *
+	 * @return void
+	 */
+	private function _remove_email_template()
+	{
+		$label = 'MassActionSupplierProposal';
+		$sql = "DELETE FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
+		$this->db->query($sql);
 	}
 
 }

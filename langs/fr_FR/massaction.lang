@@ -50,6 +50,7 @@ NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération
 SetupAutoDownloadTitle=Téléchargement direct
 SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
+SetupAutoSendSupplierPropal= Envoyer automatiquement les demandes de prix fournisseur par mail
 MassActionLinkSalesperson=Affecter des commerciaux
 MassActionSalesPersonAction=Quelle action souhaitez-vous effectuer ?
 MassActionSelectSalesPerson=Sélectionnez un ou plusieurs commerciaux
@@ -108,3 +109,20 @@ Qty=Qté
 Reduction=Réduc.
 TotalHT=Total HT
 BackToModuleList = Retour liste
+
+
+#
+# Supplier price request
+#
+MassActionCreateSupplierPrice = Créer une demande de prix
+MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la facture fournisseur pour les 1 lignes?
+MassActionSelectSupplier = Sélectionnez les fournisseurs :
+MassActionSelectModelEmail Sélectionner le modèle de mail :
+MassActionErrorFailedToSendMailTo = Impossible d'envoyer le mail pour le fournisseur %s
+MassActionSupplierPriceRequestCreatedFor = Demande de prix créer pour le fournisseur %s : %s
+
+MassActionSupplierPriceRequest = Demande de prix fournisseur
+MassActionHello = Bonjour,
+MassActionPleaseFindAttachedOurPriceRequest = Veuilliez trouvez ci-joint notre demande de prix pour la référence
+MassActionSincerely = Cordialement
+MassActionErrorNoSuppliersSelected = Veuilliez sélectionner au moins un fournisseur.

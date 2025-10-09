@@ -263,7 +263,24 @@ class MassAction {
 					'name' => 'marge_tx'
 				)
 			);
-
+		} elseif ($action == 'preSelectSupplierPrice') {
+			$actionInFormConfirm = 'createSupplierPrice';
+			$title = $langs->trans('MassActionConfirmEdit');
+			$question = $langs->trans('MassActionConfirmcreateSupplierPrice', $nbrOfSelectedLines);
+			$formQuestion = array(
+				array(
+					'label' => $langs->trans('MassActionSelectSupplier'),
+					'type' => 'other',
+					'name' => 'supplierPrice',
+					'value' => $form->select_company('', 'supplierid', '', 1, 'supplier', 0, [], 0, 'minwidth100', '', '', 1, [], true),
+				),
+				array(
+					'label' => $langs->trans('MassActionSelectModelEmail'),
+					'type' => 'other',
+					'name' => 'modelEmail',
+					'value' => $form->selectModelMail("", 'supplier_proposal_send', 0, 0, ''),
+				)
+			);
 		}
 
 		if(empty($actionInFormConfirm) || empty($title) ) {
@@ -297,6 +314,7 @@ class MassAction {
 		}
 		$arrayOfMassActions['preeditquantity'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditQty");
 		$arrayOfMassActions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");
+		$arrayOfMassActions['preSelectSupplierPrice'] = img_picto('', 'fa-file-signature ', 'class="pictofixedwidth"') . $langs->trans("MassActionCreateSupplierPrice");
 
 		$massActionButton = $form->selectMassAction('', $arrayOfMassActions);
 

@@ -31,8 +31,11 @@ require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
 require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
+require_once DOL_DOCUMENT_ROOT.'/supplier_proposal/class/supplier_proposal.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/CMailFile.class.php';
 
 
 
@@ -138,7 +141,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	}
 
 	/**
-	 * Overloading the doActions function : replacing the parent's function with the one below
+	 * Overloading the doMassActions function : replacing the parent's function with the one below
 	 *
 	 * @param   array()         $parameters     Hook metadatas (context, etc...)
 	 * @param   CommonObject    &$object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
@@ -439,9 +442,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param $hookmanager
 	 * @return int
 	 */
-	public function doActions($parameters, &$object, &$action, $hookmanager)
-	{
-		global $langs, $user;
+	public function doActions($parameters, &$object, &$action, $hookmanager) {
+		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
 		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
@@ -523,7 +525,143 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			}
 
+			if ($action == 'createSupplierPrice' && $confirm == 'yes') {
+				if ($user->hasRight('supplier_proposal', 'creer') || $user->hasRight('supplier_proposal', 'lire')) {
+					setEventMessage($langs->trans("ErrorForbidden"), 'errors');
+					$action = '';
+					return -1;
+				}
+
+				$TSupplierIds = GETPOST('supplierid', 'array');
+				$templateId = GETPOST('model_mail', 'int');
+				$TErrors = array();
+
+				if (empty($TSupplierIds)) {
+					$TErrors[] = $langs->trans("MassActionErrorNoSuppliersSelected");
+					dol_syslog("MassAction - Error: No suppliers were selected.", LOG_ERR);
+				}
+
+				if (!empty($TErrors)) {
+					$massAction->handleErrors([], $TErrors, $action);
+					$action = '';
+					return -1;
+				}
+
+				// Fetch details of the selected lines from the original object
+				$selectedLinesDetails = array();
+				foreach ($object->lines as $line) {
+					// Use in_array to check if the line->id exists in our array of selected line IDs
+					if (in_array($line->id, $TSelectedLines)) {
+						$selectedLinesDetails[] = $line;
+					}
+				}
+
+				if (empty($selectedLinesDetails)) {
+					setEventMessage('ErrorCouldNotFindLineDetails', 'errors');
+					$action = '';
+					return -1;
+				}
+
+
+				// Loop over each selected supplier to create a price request for each one
+				foreach ($TSupplierIds as $supplierId) {
+					$supplier = new Societe($this->db);
+					$supplier->fetch($supplierId);
+
+					$this->db->begin();
+					$error_for_this_supplier = false;
+
+					$supplierProposal = new SupplierProposal($this->db);
+					$supplierProposal->socid = $supplierId;
+					$supplierProposal->date_creation = dol_now();
+					if (!empty($object->fk_project)) {
+						$supplierProposal->fk_project = $object->fk_project;
+					}
+
+
+					$result = $supplierProposal->create($user);
+					if ($result < 0) {
+						$errorMessages[] = $langs->trans("FailedToCreatePriceRequestFor", $supplier->name) . ' : ' . $supplierProposal->error;
+						$error_for_this_supplier = true;
+					}
+
+					if (!$error_for_this_supplier) {
+						// Keep the ID for fetching later because $supplierProposal->lines is empty after addline ??
+						$proposalSupplierid = $supplierProposal->id;
+
+						foreach ($selectedLinesDetails as $line) {
+							$supplierProposal->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, 0, 0, $line->fk_product, $line->remise_percent, 'HT', $line->price, 0,  $line->product_type, $line->rang, $line->special_code, $line->fk_parent_line, $line->fk_fournprice, $line->pa_ht, $line->label);
+						}
+						$supplierProposal->valid($user);
+						$supplierProposal->add_object_linked($object->element, $object->id);
+						$supplierProposal->fetch($proposalSupplierid);
+					}
+
+					if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPAL') && !$error_for_this_supplier && !empty($templateId)) {
+
+						$outputlangs = $langs;
+						if (!empty($supplier->default_lang)) {
+							$outputlangs = new Translate("", $supplier->default_lang);
+						}
+
+						$result = $supplierProposal->generateDocument($supplierProposal->modelpdf, $outputlangs);
+
+						if ($result <= 0) {
+							$errorMessages[] = $langs->trans("FailedToGeneratePDFFor", $supplier->name) . ' : ' . $supplierProposal->error;
+							$error_for_this_supplier = true;
+						} else {
+							$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
+							$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
+							$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
+
+							$sql = "SELECT topic, content FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE rowid = " . $templateId;
+							$res = $this->db->query($sql);
+
+							$template = $this->db->fetch_object($res);
+
+							$substitutionarray = getCommonSubstitutionArray($outputlangs, 0, null, $supplierProposal);
+
+							complete_substitutions_array($substitutionarray, $outputlangs, $supplierProposal);
+
+							$subject = make_substitutions($template->topic, $substitutionarray, $outputlangs);
+							$content_after_subst = make_substitutions($template->content, $substitutionarray, $outputlangs);
+							$content = nl2br($content_after_subst); // Convert newlines to <br /> for HTML email
+
+							$mail = new CMailFile(
+								$subject, $supplier->email, $user->email, $content,
+								array($attachment_filename), array('application/pdf'), array($objectref_sanitized . ".pdf"),
+								'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
+							);
+
+							if (!$mail->sendfile()) {
+								$errorMessages[] = $langs->trans("MassActionErrorFailedToSendMailTo", $supplier->name) . ': ' . $mail->error;
+								$error_for_this_supplier = true;
+							}
+						}
+					}
+
+
+					if ($error_for_this_supplier) {
+						$this->db->rollback();
+					} else {
+						$this->db->commit();
+						$successMessages[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1,'','', 1));
+					}
+				}
+
+				if (!empty($successMessages)) {
+					setEventMessage(implode('<br>', $successMessages));
+				}
+				if (!empty($errorMessages)) {
+					setEventMessage(implode('<br>', $errorMessages), 'errors');
+				}
+
+				$action = '';
+			}
+
 		}
+
+
 
 		return 0;
 	}
@@ -721,7 +859,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$langs->load('massaction@massaction');
 
 		$TContexts = explode(':',$parameters['context']);
-//		var_dump($contexts);exit;
 
 		// TODO make it work on invoices and orders before adding this button
 
@@ -740,6 +877,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				'actionSplitDelete' => 'SplitDeleteOk',
 				'actionSplit' => 'SplitOk',
 				'actionSplitCopy' => 'SplitCopyOk',
+				'actionCreateSupplierPrice' => 'CreateSupplierPriceOk',
 			];
 
 			foreach ($TActions as $key => $message) {
@@ -753,16 +891,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 			if ($displayButton) {
-
-				if($object->element=='facture')$idvar = 'facid';
-				else $idvar='id';
+				if($object->element=='facture') $idvar = 'facid';
+				else $idvar = 'id';
 				if($object->element == 'propal') {
 					$fiche = '/comm/propal/card.php';
-				}
-				else if($object->element == 'commande') {
+				} else if($object->element == 'commande') {
 					$fiche = '/commande/card.php';
-				}
-				else if($object->element == 'facture') {
+				} else if($object->element == 'facture') {
 					$fiche = '/compta/facture/card.php';
 				}
 
@@ -771,8 +906,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					var currentAction = "<?php echo $action ?>";
 					$(document).ready(function() {
-
-
 						if(currentAction == "cut") {
 							$('#pop-split').remove();
 							$('body').append('<div id="pop-split"></div>');
@@ -789,9 +922,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 											text: "<?php echo $langs->transnoentities('SimplyCopy'); ?>",
 											title: "<?php echo $langs->transnoentities('SimplyCopyTitle'); ?>",
 											click: function() {
-
 												$('#splitform input[name=action]').val('copy');
-
 												$.ajax({
 													url: '<?php echo dol_buildpath('/massaction/script/splitLines.php', 1); ?>'
 													, method: 'POST'
@@ -825,7 +956,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 											text: "<?php echo $langs->transnoentities('SplitIt'); ?>",
 											title: "<?php echo $langs->transnoentities('SplitItTitle'); ?>",
 											click: function() {
-
 												$.ajax({
 													url: '<?php echo dol_buildpath('/massaction/script/splitLines.php', 1); ?>'
 													, method: 'POST'
@@ -860,8 +990,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 								});
 							});
 						}
-
-
 					});
 
 				</script><?php
@@ -869,4 +997,5 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 		return 0;
 	}
+
 }
