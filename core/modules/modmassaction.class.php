@@ -165,7 +165,7 @@ class modmassaction extends DolibarrModules
 	 *
 	 * @return void
 	 */
-	private function _add_email_template()
+	private function _add_email_template() : void
 	{
 		global $langs;
 
@@ -174,7 +174,7 @@ class modmassaction extends DolibarrModules
 		$label = $langs->trans('MassActionSupplierPriceRequest');
 
 		// Check if the template already exists to avoid duplicates
-		$sqlCheck = "SELECT COUNT(*) as total FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
+		$sqlCheck = "SELECT COUNT(*) as total FROM " . $this->db->prefix() . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
 		$res = $this->db->query($sqlCheck);
 		$obj = $this->db->fetch_object($res);
 
@@ -204,10 +204,10 @@ class modmassaction extends DolibarrModules
 	 *
 	 * @return void
 	 */
-	private function _remove_email_template()
+	private function _remove_email_template() : void
 	{
 		$label = 'MassActionSupplierProposal';
-		$sql = "DELETE FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
+		$sql = "DELETE FROM " . $this->db->prefix() . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
 		$this->db->query($sql);
 	}
 

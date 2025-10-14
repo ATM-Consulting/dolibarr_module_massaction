@@ -102,9 +102,9 @@ PropalTarget=Commercial proposition target
 #
 MassActionCreateSupplierPriceTitle = Create a price request
 MassActionCreateSupplierPrice = Create a price request
-MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier invoice for the 1 line(s)?
-MassActionSelectSupplier = Select suppliers:
-MassActionSelectModelEmail = Select email template:
+MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier invoice for the %s line(s)?
+MassActionSelectSupplier = Select suppliers :
+MassActionSelectModelEmail = Select email template :
 MassActionErrorFailedToSendMailTo = Failed to send the email to supplier %s
 MassActionSupplierPriceRequestCreatedFor = Price request created for supplier %s: %s
 

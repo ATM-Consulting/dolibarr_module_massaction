@@ -442,7 +442,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param $hookmanager
 	 * @return int
 	 */
-	public function doActions($parameters, &$object, &$action, $hookmanager) {
+	public function doActions($parameters, &$object, &$action, $hookmanager) : int {
 		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
@@ -520,144 +520,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			}
 
-			if ($action == 'createSupplierPrice' && $confirm == 'yes') {
-				if (!$user->hasRight('supplier_proposal', 'creer') || !$user->hasRight('supplier_proposal', 'lire')) {
-					setEventMessage($langs->trans("ErrorForbidden"), 'errors');
-					$action = '';
-					return -1;
-				}
-
-				$supplierIds = GETPOST('supplierid', 'array');
-				$templateId = GETPOST('model_mail', 'int');
-
-				if (empty($supplierIds)) {
-					$errors[] = $langs->trans("MassActionErrorNoSuppliersSelected");
-					dol_syslog("MassAction - Error: No suppliers were selected.", LOG_ERR);
-				}
-
-				if (!empty($errors)) {
-					$massAction->handleErrors([], $errors, $action);
-					$action = '';
-					return -1;
-				}
-
-				// Fetch details of the selected lines from the original object
-				$selectedLinesDetails = array();
-				foreach ($object->lines as $line) {
-					// Use in_array to check if the line->id exists in our array of selected line IDs
-					if (in_array($line->id, $TSelectedLines)) {
-						$selectedLinesDetails[] = $line;
-					}
-				}
-
-				if (empty($selectedLinesDetails)) {
-					setEventMessage('ErrorCouldNotFindLineDetails', 'errors');
-					$action = '';
-					return -1;
-				}
-
-
-				// Loop over each selected supplier to create a price request for each one
-				foreach ($supplierIds as $supplierId) {
-					$supplier = new Societe($this->db);
-					$supplier->fetch($supplierId);
-
-					$this->db->begin();
-					$error_for_this_supplier = false;
-
-					$supplierProposal = new SupplierProposal($this->db);
-					$supplierProposal->socid = $supplierId;
-					$supplierProposal->date_creation = dol_now();
-					if (!empty($object->fk_project)) {
-						$supplierProposal->fk_project = $object->fk_project;
-					}
-
-					$result = $supplierProposal->create($user);
-					if ($result < 0) {
-						$errorMessages[] = $langs->trans("FailedToCreatePriceRequestFor", $supplier->name) . ' : ' . $supplierProposal->error;
-						$error_for_this_supplier = true;
-					}
-
-					if (!$error_for_this_supplier) {
-						// Keep the ID for fetching later because $supplierProposal->lines is empty after addline
-						$proposalSupplierid = $supplierProposal->id;
-
-						foreach ($selectedLinesDetails as $line) {
-							if (getDolGlobalInt("MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO")) {
-								$line->subprice = 0;
-								$line->tva_tx = 0 ;
-								$line->fk_fournprice = 0 ;
-								$line->pa_ht = 0 ;
-							}
-							$supplierProposal->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, 0, 0, $line->fk_product, $line->remise_percent, 'HT', $line->price, 0,  $line->product_type, $line->rang, $line->special_code, $line->fk_parent_line, $line->fk_fournprice, $line->pa_ht, $line->label);
-						}
-						$supplierProposal->valid($user);
-						$supplierProposal->add_object_linked($object->element, $object->id);
-						$supplierProposal->fetch($proposalSupplierid);
-					}
-
-					if (!$error_for_this_supplier) {
-
-						$result = $supplierProposal->generateDocument($supplierProposal->modelpdf, $langs);
-
-						if ($result <= 0) {
-							$errorMessages[] = $langs->trans("FailedToGeneratePDFFor", $supplier->name) . ' : ' . $supplierProposal->error;
-							$error_for_this_supplier = true;
-						} else {
-							$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
-							$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
-
-							if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL') && !empty($templateId)) {
-								$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
-
-								$sql = "SELECT topic, content FROM " . $this->db->prefix() . "c_email_templates WHERE rowid = " . $templateId AND "entity = " . $conf->entity;
-								$res = $this->db->query($sql);
-
-								$template = $this->db->fetch_object($res);
-
-								$substitutionarray = getCommonSubstitutionArray($langs, 0, null, $supplierProposal);
-
-								complete_substitutions_array($substitutionarray, $langs, $supplierProposal);
-
-								$subject = make_substitutions($template->topic, $substitutionarray, $langs);
-								$content_after_subst = make_substitutions($template->content, $substitutionarray, $langs);
-								$content = nl2br($content_after_subst); // Convert newlines to <br /> for HTML email
-
-								$mail = new CMailFile(
-									$subject, $supplier->email, $user->email, $content,
-									array($attachment_filename), array('application/pdf'), array($objectref_sanitized . ".pdf"),
-									'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
-								);
-
-								$sendMailResult = $mail->sendfile();
-								if (!$sendMailResult) {
-									$errorMessages[] = $langs->trans("MassActionErrorFailedToSendMailTo", $supplier->name) . ' : ' . $mail->errors;
-									$error_for_this_supplier = true;
-								}
-							}
-						}
-					}
-
-					if ($error_for_this_supplier) {
-						$this->db->rollback();
-					} else {
-						$this->db->commit();
-						$successMessages[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1,'','', 1));
-						if ($sendMailResult) {
-							$successMessages[] = $langs->trans("MassActionEmailSentTo", $supplier->email);
-						}
-					}
-				}
-
-				if (!empty($successMessages)) {
-					setEventMessage(implode('<br>', $successMessages));
-				}
-				if (!empty($errorMessages)) {
-					setEventMessage(implode('<br>', $errorMessages), 'errors');
-				}
-
-				$action = '';
-			}
+			// Supplier price request management
+			$massAction->handleCreateSupplierPriceAction($this->db, $user, $langs, $conf, $object, $TSelectedLines);
 
 		}
 

@@ -1,5 +1,7 @@
 <?php
 
+include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
+
 class MassAction {
 
 	public $TErrors = [];
@@ -327,6 +329,216 @@ class MassAction {
 		$massActionButton = $form->selectMassAction('', $arrayOfMassActions);
 
 		return $massActionButton;
+	}
+
+	/**
+	 * Main function to orchestrate the creation of supplier price requests.
+	 * This is the entry point for the logic.
+	 *
+	 * @param DoliDB $db The database handler instance.
+	 * @param User $user The current user object.
+	 * @param Translate $langs The translation object.
+	 * @param Conf $conf The configuration object.
+	 * @param CommonObject $object The original source object (e.g., Order, Proposal).
+	 * @return void                This function does not return a value but outputs messages.
+	 */
+	public function handleCreateSupplierPriceAction($db, $user, $langs, $conf, $object, $TSelectedLines): void
+	{
+		// Ensure we are processing the correct action
+		if (GETPOST('action') !== 'createSupplierPrice' || GETPOST('confirm') !== 'yes') {
+			return;
+		}
+		// 1. Initial checks for permissions and input data
+		if (!$this->hasRequiredPermissions($user)) {
+			setEventMessage($langs->trans("ErrorForbidden"), 'errors');
+			return;
+		}
+
+		$supplierIds = GETPOST('supplierid', 'array');
+		if (empty($supplierIds)) {
+			setEventMessage($langs->trans("MassActionErrorNoSuppliersSelected"), 'errors');
+			dol_syslog("MassAction - Error: No suppliers were selected.", LOG_ERR);
+			return;
+		}
+
+		// 2. Retrieve the details of the selected product lines
+		$selectedLinesDetails = $this->getSelectedLineDetails($object, $TSelectedLines);
+		if (empty($selectedLinesDetails)) {
+			setEventMessage($langs->trans('ErrorCouldNotFindLineDetails'), 'errors');
+			return;
+		}
+
+		$templateId = GETPOST('model_mail', 'int');
+		$successMessages = [];
+		$errorMessages = [];
+
+		// 3. Loop through each supplier to process their price request
+		foreach ($supplierIds as $supplierId) {
+			try {
+				$resultMessages = $this->processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $db, $user, $langs, $conf, $object);
+				$successMessages = array_merge($successMessages, $resultMessages);
+			} catch (Exception $e) {
+				$errorMessages[] = $e->getMessage();
+			}
+		}
+
+		// 4. Display status messages at the end of the process
+		if (!empty($successMessages)) {
+			setEventMessage(implode('<br>', $successMessages), 'mesgs');
+		}
+		if (!empty($errorMessages)) {
+			setEventMessage(implode('<br>', $errorMessages), 'errors');
+		}
+	}
+
+	/**
+	 * Processes the creation of a price request for a single supplier.
+	 *
+	 * @return array                            An array of success messages.
+	 * @throws Exception                        If an error occurs during the process.
+	 */
+	public function processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $db, $user, $langs, $conf, $object): array
+	{
+		$supplier = new Societe($db);
+		$supplier->fetch($supplierId);
+		$successLog = [];
+
+		$db->begin();
+
+		try {
+			$supplierProposal = $this->createSupplierProposal($supplierId, $selectedLinesDetails, $db, $user, $object);
+			$successLog[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1, '', '', 1));
+
+			$this->generateProposalPdf($supplierProposal, $langs);
+
+			if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL') && !empty($templateId)) {
+				$this->sendProposalByEmail($supplierProposal, $supplier, $templateId, $db, $user, $langs, $conf);
+				$successLog[] = $langs->trans("MassActionEmailSentTo", $supplier->email);
+			}
+
+			$db->commit();
+			return $successLog;
+
+		} catch (Exception $e) {
+			$db->rollback();
+			throw new Exception($langs->trans("ErrorProcessingSupplier", $supplier->name) . ': ' . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Creates and populates a supplier price request.
+	 *
+	 * @return SupplierProposal
+	 * @throws Exception if creation fails.
+	 */
+	public function createSupplierProposal($supplierId, $lines, $db, $user, $object): SupplierProposal
+	{
+		$supplierProposal = new SupplierProposal($db);
+		$supplierProposal->socid = $supplierId;
+		$supplierProposal->date_creation = dol_now();
+		if (!empty($object->fk_project)) {
+			$supplierProposal->fk_project = $object->fk_project;
+		}
+
+		if ($supplierProposal->create($user) < 0) {
+			throw new Exception("Failed to create price request: " . $supplierProposal->error);
+		}
+
+		$proposalId = $supplierProposal->id;
+
+		foreach ($lines as $line) {
+			if (getDolGlobalInt("MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO")) {
+				$line->subprice = 0;
+				$line->tva_tx = 0;
+				$line->fk_fournprice = 0;
+				$line->pa_ht = 0;
+			}
+			$supplierProposal->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, 0, 0, $line->fk_product, $line->remise_percent, 'HT', $line->price, 0, $line->product_type, $line->rang, $line->special_code, $line->fk_parent_line, $line->fk_fournprice, $line->pa_ht, $line->label);
+		}
+
+		$supplierProposal->valid($user);
+		$supplierProposal->add_object_linked($object->element, $object->id);
+		$supplierProposal->fetch($proposalId);
+
+		return $supplierProposal;
+	}
+
+	/**
+	 * Generates the PDF document for a price request.
+	 *
+	 * @throws Exception if PDF generation fails.
+	 */
+	public function generateProposalPdf(SupplierProposal $proposal, $langs): void
+	{
+		if ($proposal->generateDocument($proposal->modelpdf, $langs) <= 0) {
+			throw new Exception("Failed to generate PDF: " . $proposal->error);
+		}
+	}
+
+	/**
+	 * Sends the price request by email to the supplier.
+	 *
+	 * @throws Exception if the email sending fails.
+	 */
+	public static function sendProposalByEmail(SupplierProposal $supplierProposal, Societe $supplier, $templateId, $db, $user, $langs, $conf): void
+	{
+		$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
+		$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
+		$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
+
+		$formmail = new FormMail($db);
+
+		$template = $formmail->getEMailTemplate($db, 'supplier_proposal_send', $user, $langs, $templateId);
+		$substitutionarray = getCommonSubstitutionArray($langs, 0, null, $supplierProposal);
+		complete_substitutions_array($substitutionarray, $langs, $supplierProposal);
+		$subject = make_substitutions($template->topic, $substitutionarray, $langs);
+		$content = nl2br(make_substitutions($template->content, $substitutionarray, $langs));
+
+		$mail = new CMailFile(
+			$subject, $supplier->email, $user->email, $content,
+			[$attachment_filename], ['application/pdf'], [$objectref_sanitized . ".pdf"],
+			'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
+		);
+
+		if (!$mail->sendfile()) {
+			$errorDetails = is_array($supplier->error) ? implode(', ', $supplier->error) : $supplier->error;
+
+			throw new Exception("Failed to send email: " . $errorDetails);
+		}
+
+	}
+
+	/**
+	 * Checks if the user has the required permissions.
+	 *
+	 * @param User $user The user object.
+	 * @return bool
+	 */
+	public static function hasRequiredPermissions($user): bool
+	{
+		return $user->hasRight('supplier_proposal', 'creer') || $user->hasRight('supplier_proposal', 'lire');
+	}
+
+	/**
+	 * Retrieves the details of the selected product lines.
+	 *
+	 * @param CommonObject $object The source object (e.g., Proposal).
+	 * @param array $selectedLineIds An array of selected line IDs.
+	 * @return array
+	 */
+	public function getSelectedLineDetails($object, $selectedLineIds): array
+	{
+		$details = [];
+		if (empty($selectedLineIds) || !is_array($object->lines)) {
+			return $details;
+		}
+
+		foreach ($object->lines as $line) {
+			if (in_array($line->id, $selectedLineIds)) {
+				$details[] = $line;
+			}
+		}
+		return $details;
 	}
 
 }
