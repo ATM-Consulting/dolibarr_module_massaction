@@ -50,9 +50,10 @@ NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération
 SetupAutoDownloadTitle=Téléchargement direct
 SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
-SetupAutoSendSupplierProposal= Envoyer automatiquement les demandes de prix fournisseur par mail
-SetupCreateProposalSupplierToZero= Générer les demandes de prix fournisseur à zéro
-SetupCreateProposalSupplierWithConf= Configuration SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY activées : Les produits n’ayant pas de prix d’achat associé à un fournisseur ne seront pas ajoutés à la demande de prix.
+MassActionSetupAutoSendSupplierProposal= Envoyer automatiquement les demandes de prix fournisseur par mail
+MassActionSetupCreateProposalSupplierToZero= Générer les demandes de prix fournisseur à zéro
+MassActioSnetupCreateProposalSupplierWithConf= Configuration SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY activées : Les produits n’ayant pas de prix d’achat associé à un fournisseur ne seront pas ajoutés à la demande de prix.
+MassActionErrorProcessingSupplier = Erreur lors de la création de la demande de prix pour le fournisseur %s
 MassActionLinkSalesperson=Affecter des commerciaux
 MassActionSalesPersonAction=Quelle action souhaitez-vous effectuer ?
 MassActionSelectSalesPerson=Sélectionnez un ou plusieurs commerciaux
@@ -114,7 +115,7 @@ BackToModuleList = Retour liste
 
 
 #
-# Supplier price request
+# Supplier proposal request
 #
 MassActionCreateSupplierPrice = Créer une demande de prix
 MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la demande de prix fournisseur pour les %s lignes ?
@@ -129,3 +130,7 @@ MassActionPleaseFindAttachedOurPriceRequest = Veuillez trouvez ci-joint notre de
 MassActionSincerely = Cordialement
 MassActionErrorNoSuppliersSelected = Veuillez sélectionner au moins un fournisseur.
 MassActionEmailSentTo = Email envoyé à l'expéditeur %s
+MassActionErrorCouldNotFindlineDetails = Impossibles de récupérer le détails des lignes
+MassActionFailedToCreateSupplierProposal = Échec de la création de la demande de prix fournisseur :
+MassActionFailedToGeneratePDF =	Échec de génération du pdf :
+MassActionFailedToSendEmail = Échec de l'envoi du mail :

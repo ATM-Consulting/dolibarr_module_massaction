@@ -519,10 +519,10 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			}
 			// Supplier price request management
-			if (GETPOST('action', 'alpha') == 'createSupplierPrice') {
+			if ($action == 'createSupplierPrice') {
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
-				$massAction->handleCreateSupplierPriceAction($this->db, $user, $langs, $conf, $object, $TSelectedLines, $supplierIds, $templateId);
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, $templateId);
 			}
 		}
 		return 0;

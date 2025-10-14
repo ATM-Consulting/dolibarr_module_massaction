@@ -335,20 +335,18 @@ class MassAction {
 	 * Main function to orchestrate the creation of supplier price requests.
 	 * This is the entry point for the logic.
 	 *
-	 * @param DoliDB $db The database handler instance.
-	 * @param User $user The current user object.
-	 * @param Translate $langs The translation object.
-	 * @param Conf $conf The configuration object.
 	 * @param CommonObject $object The original source object (e.g., Order, Proposal).
-	 * @param Array $supplierIds The supplier to send the supplier proposal
-	 * @param Int $templateId The email template to use for sending the supplier proposal
+	 * @param array $TSelectedLines The lines to process.
+	 * @param array $supplierIds The supplier to send the supplier proposal
+	 * @param int $templateId The email template to use for sending the supplier proposal
 	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public function handleCreateSupplierPriceAction($db, $user, $langs, $conf, $object, $TSelectedLines, $supplierIds, $templateId): void
+	public function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId): void
 	{
+		global $db, $user, $langs, $conf;
 
 		// 1. Initial checks for permissions and input data
-		if (!$this->hasRequiredPermissions($user)) {
+		if (!$this->hasRequiredPermissionsToCreateSupplierProposal($user)) {
 			setEventMessage($langs->trans("ErrorForbidden"), 'errors');
 			return;
 		}
@@ -362,7 +360,8 @@ class MassAction {
 		// 2. Retrieve the details of the selected product lines
 		$selectedLinesDetails = $this->getSelectedLineDetails($object, $TSelectedLines);
 		if (empty($selectedLinesDetails)) {
-			setEventMessage($langs->trans('ErrorCouldNotFindLineDetails'), 'errors');
+			setEventMessage($langs->trans('MASSACTIONERRORCOULDNOTFINDLINEDETAILS'), 'errors');
+			dol_syslog("MassAction - Error: Could not find line details.", LOG_ERR);
 			return;
 		}
 
@@ -372,7 +371,7 @@ class MassAction {
 		// 3. Loop through each supplier to process their price request
 		foreach ($supplierIds as $supplierId) {
 			try {
-				$resultMessages = $this->processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $db, $user, $langs, $conf, $object);
+				$resultMessages = $this->processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object);
 				$successMessages = array_merge($successMessages, $resultMessages);
 			} catch (Exception $e) {
 				$errorMessages[] = $e->getMessage();
@@ -385,17 +384,24 @@ class MassAction {
 		}
 		if (!empty($errorMessages)) {
 			setEventMessage(implode('<br>', $errorMessages), 'errors');
+			dol_syslog("MassAction - Error: " . implode(', ', $errorMessages), LOG_ERR);;
 		}
 	}
 
 	/**
 	 * Processes the creation of a price request for a single supplier.
 	 *
+	 * @param int $supplierId                    The ID of the supplier.
+	 * @param array $selectedLinesDetails         An array of selected line details.
+	 * @param int $templateId                    The ID of the email template to use for sending the supplier proposal.
+	 * @param CommonObject $object              The original source object (e.g., Order, Proposal).
 	 * @return array                            An array of success messages.
 	 * @throws Exception                        If an error occurs during the process.
 	 */
-	public function processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $db, $user, $langs, $conf, $object): array
+	public function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object): array
 	{
+		global $db, $langs;
+
 		$supplier = new Societe($db);
 		$supplier->fetch($supplierId);
 		$successLog = [];
@@ -403,13 +409,13 @@ class MassAction {
 		$db->begin();
 
 		try {
-			$supplierProposal = $this->createSupplierProposal($supplierId, $selectedLinesDetails, $db, $user, $object);
+			$supplierProposal = $this->createSupplierProposal($supplierId, $selectedLinesDetails, $object);
 			$successLog[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1, '', '', 1));
 
-			$this->generateProposalPdf($supplierProposal, $langs);
+			$this->generateProposalPdf($supplierProposal);
 
 			if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL') && !empty($templateId)) {
-				$this->sendProposalByEmail($supplierProposal, $supplier, $templateId, $db, $user, $langs, $conf);
+				$this->sendProposalByEmail($supplierProposal, $supplier, $templateId);
 				$successLog[] = $langs->trans("MassActionEmailSentTo", $supplier->email);
 			}
 
@@ -418,18 +424,23 @@ class MassAction {
 
 		} catch (Exception $e) {
 			$db->rollback();
-			throw new Exception($langs->trans("ErrorProcessingSupplier", $supplier->name) . ': ' . $e->getMessage());
+			throw new Exception($langs->trans("MassActionErrorProcessingSupplier", $supplier->name) . ': ' . $e->getMessage());
 		}
 	}
 
 	/**
 	 * Creates and populates a supplier price request.
 	 *
-	 * @return SupplierProposal
-	 * @throws Exception if creation fails.
-	 */
-	public function createSupplierProposal($supplierId, $lines, $db, $user, $object): SupplierProposal
+	 * * @param int $supplierId Id of the supplier
+	 * * @param array $lines Array of lines to process
+	 * * @param CommonObject $object The original source object (e.g., Order, Proposal)
+	 * * @return SupplierProposal The created supplier proposal request.
+	 * * @throws Exception if creation fails.
+ */
+	public function createSupplierProposal(int $supplierId, array $lines, CommonObject $object): SupplierProposal
 	{
+		global $db, $user, $langs;
+
 		$supplierProposal = new SupplierProposal($db);
 		$supplierProposal->socid = $supplierId;
 		$supplierProposal->date_creation = dol_now();
@@ -438,10 +449,8 @@ class MassAction {
 		}
 
 		if ($supplierProposal->create($user) < 0) {
-			throw new Exception("Failed to create price request: " . $supplierProposal->error);
+			throw new Exception($langs->trans("MassActionFailedToCreateSupplierProposal" . $supplierProposal->error));
 		}
-
-		$proposalId = $supplierProposal->id;
 
 		foreach ($lines as $line) {
 			if (getDolGlobalInt("MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO")) {
@@ -455,7 +464,7 @@ class MassAction {
 
 		$supplierProposal->valid($user);
 		$supplierProposal->add_object_linked($object->element, $object->id);
-		$supplierProposal->fetch($proposalId);
+		$supplierProposal->fetch($supplierProposal->id);
 
 		return $supplierProposal;
 	}
@@ -463,22 +472,30 @@ class MassAction {
 	/**
 	 * Generates the PDF document for a price request.
 	 *
+	 * @param SupplierProposal $proposal The price request to generate the PDF for.
 	 * @throws Exception if PDF generation fails.
 	 */
-	public function generateProposalPdf(SupplierProposal $proposal, $langs): void
+	public function generateProposalPdf(SupplierProposal $proposal): void
 	{
+		global $langs;
+
 		if ($proposal->generateDocument($proposal->modelpdf, $langs) <= 0) {
-			throw new Exception("Failed to generate PDF: " . $proposal->error);
+			throw new Exception($langs->trans("MassActionFailedToGeneratePDF") . $proposal->error);
 		}
 	}
 
 	/**
 	 * Sends the price request by email to the supplier.
 	 *
+	 * @param SupplierProposal $supplierProposal The supplier price request to send.
+	 * @param Societe $supplier The supplier to send the email to.
+	 * @param int $templateId The email template to use for sending the email.
 	 * @throws Exception if the email sending fails.
 	 */
-	public static function sendProposalByEmail(SupplierProposal $supplierProposal, Societe $supplier, $templateId, $db, $user, $langs, $conf): void
+	public static function sendProposalByEmail(SupplierProposal $supplierProposal, Societe $supplier, int $templateId): void
 	{
+		global $db, $user, $langs, $conf;
+
 		$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
 		$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
 		$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
@@ -499,8 +516,7 @@ class MassAction {
 
 		if (!$mail->sendfile()) {
 			$errorDetails = is_array($supplier->error) ? implode(', ', $supplier->error) : $supplier->error;
-
-			throw new Exception("Failed to send email: " . $errorDetails);
+			throw new Exception($langs->trans("MassActionFailedToSendEmail").  $errorDetails);
 		}
 
 	}
@@ -511,7 +527,7 @@ class MassAction {
 	 * @param User $user The user object.
 	 * @return bool
 	 */
-	public static function hasRequiredPermissions($user): bool
+	public static function hasRequiredPermissionsToCreateSupplierProposal(User $user): bool
 	{
 		return $user->hasRight('supplier_proposal', 'creer') || $user->hasRight('supplier_proposal', 'lire');
 	}
@@ -523,7 +539,7 @@ class MassAction {
 	 * @param array $selectedLineIds An array of selected line IDs.
 	 * @return array
 	 */
-	public function getSelectedLineDetails($object, $selectedLineIds): array
+	public function getSelectedLineDetails(CommonObject $object, array $selectedLineIds): array
 	{
 		$details = [];
 		if (empty($selectedLineIds) || !is_array($object->lines)) {

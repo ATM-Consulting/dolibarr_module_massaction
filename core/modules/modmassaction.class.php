@@ -75,7 +75,6 @@ class modmassaction extends DolibarrModules
 			'hooks' => array(
 				'globalcard',
 				'main',
-				'emailElementlist',
 			)
 		);
 
@@ -140,7 +139,7 @@ class modmassaction extends DolibarrModules
 
 		define('INC_FROM_DOLIBARR',true);
 
-		$this->_add_email_template();
+		$this->addEmailTemplateForSupplierProposal();
 
 		return $this->_init($sql, $options);
 	}
@@ -156,7 +155,6 @@ class modmassaction extends DolibarrModules
 	function remove($options='')
 	{
 		$sql = array();
-		$this->_remove_email_template();
 		return $this->_remove($sql, $options);
 	}
 
@@ -165,7 +163,7 @@ class modmassaction extends DolibarrModules
 	 *
 	 * @return void
 	 */
-	private function _add_email_template() : void
+	private function addEmailTemplateForSupplierProposal() : void
 	{
 		global $langs;
 
@@ -199,18 +197,5 @@ class modmassaction extends DolibarrModules
 		}
 	}
 
-	/**
-	 * Remove the email template on module deactivation.
-	 *
-	 * @return void
-	 */
-	private function _remove_email_template() : void
-	{
-		global $langs;
-
-		$label = $langs->trans('MassActionSupplierPriceRequest');
-		$sql = "DELETE FROM " . $this->db->prefix() . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
-		$this->db->query($sql);
-	}
 
 }
