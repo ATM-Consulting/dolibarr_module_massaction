@@ -50,6 +50,10 @@ NoDirectoryAvailable=Directory not available
 MassActionErrorGeneration=Generation error
 SetupAutoDownloadTitle=Auto Download
 SetupAutoDownloadDesc=Automatically download the generated zip archive
+MassActionSetupAutoSendSupplierProposal= Automatically send supplier proposal by email
+MassActionSetupCreateProposalSupplierToZero= Generate supplier requests for quotation with zero amount
+MassActionSetupCreateProposalSupplierWithConf= Configuration SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY activate : Products without a purchase price associated with a supplier will not be added to the request for quotation.
+MassActionErrorProcessingSupplier = Error while processing supplier proposal for %s
 MassActionLinkSalesperson=Add sales representatives
 MassActionSalesPersonAction=What action do you want to apply ?
 MassActionSelectSalesPerson=Select one or several sales representatives
@@ -93,3 +97,25 @@ SimplyCopyTitle=If a proposal is selected, then the copy will done into this one
 SplitItTitle=If a proposal is selected, then the move will done into this one
 Or=Or
 PropalTarget=Commercial proposition target
+
+#
+# Supplier price request
+#
+MassActionCreateSupplierPriceTitle = Create a price request
+MassActionCreateSupplierPrice = Create a price request
+MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier proposal for the %s line(s) ?
+MassActionSelectSupplier = Select suppliers :
+MassActionSelectModelEmail = Select email template :
+MassActionErrorFailedToSendMailTo = Failed to send the email to supplier %s
+MassActionSupplierPriceRequestCreatedFor = Price request created for supplier %s: %s
+
+MassActionSupplierPriceRequest = Price request
+MassActionHello = Greetings,
+MassActionPleaseFindAttachedOurPriceRequest = You can find in attached files our price request.
+MassActionSincerely = Best regards
+MassActionErrorNoSuppliersSelected = Please, select at least one supplier.
+MassActionEmailSentTo = Email sent to the sender %s
+MassActionErrorCouldNotFindlineDetails = Unable to find line details
+MassActionFailedToCreateSupplierProposal = Failed to create supplier proposal :
+MassActionFailedToGeneratePDF =	Failed to generate PDF :
+MassActionFailedToSendEmail = Failed to send email :

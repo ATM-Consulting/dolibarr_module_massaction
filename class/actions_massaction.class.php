@@ -31,8 +31,10 @@ require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
 require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
+require_once DOL_DOCUMENT_ROOT.'/supplier_proposal/class/supplier_proposal.class.php';
 
 
 
@@ -138,7 +140,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	}
 
 	/**
-	 * Overloading the doActions function : replacing the parent's function with the one below
+	 * Overloading the doMassActions function : replacing the parent's function with the one below
 	 *
 	 * @param   array()         $parameters     Hook metadatas (context, etc...)
 	 * @param   CommonObject    &$object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
@@ -439,9 +441,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param $hookmanager
 	 * @return int
 	 */
-	public function doActions($parameters, &$object, &$action, $hookmanager)
-	{
-		global $langs, $user;
+	public function doActions($parameters, &$object, &$action, $hookmanager) : int {
+		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
 		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
@@ -454,7 +455,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$langs->load('massaction@massaction');
 			$massAction = new MassAction($this->db, $object);
 
-
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
 
@@ -463,15 +463,11 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			if ($action == 'delete_lines' && $confirm == 'yes') {
 				$TRowIds = array_column($object->lines, 'rowid');
 
-				$TErrors = array();
-
 				$this->db->begin();
 
 				foreach ($TSelectedLines as $selectedLine) {
 					$index = array_search(intval($selectedLine), $TRowIds);
-
 					$massAction->deleteLine($index, $selectedLine);
-
 				}
 
 				if(!empty($massAction->TErrors)) {
@@ -480,7 +476,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
+				$massAction->handleErrors($TSelectedLines, $massAction->TErrors, $action);
 
 				$action = '';
 
@@ -494,15 +490,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				if ($action == 'edit_quantity') {
 					$quantity = GETPOST('quantity', 'alpha');
-					$TErrors = MassAction::checkFields($action, $quantity);
+					$errors = MassAction::checkFields($action, $quantity);
 				} elseif ($action == 'edit_margin') {
 					$marge_tx = GETPOST('marge_tx', 'alpha');
-					$TErrors = MassAction::checkFields($action, $marge_tx);
+					$errors = MassAction::checkFields($action, $marge_tx);
 				}
 
 				$this->db->begin();
 
-				if (empty($TErrors)) {
+				if (empty($errors)) {
 					foreach ($TSelectedLines as $selectedLine) {
 						$index = array_search(intval($selectedLine), $TRowIds);
 
@@ -517,14 +513,18 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
+				$massAction->handleErrors($TSelectedLines, $errors, $action);
 
 				$action = '';
 
 			}
-
+			// Supplier price request management
+			if ($action == 'createSupplierPrice') {
+				$supplierIds = GETPOST('supplierid', 'array');
+				$templateId = GETPOST('model_mail', 'int');
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, $templateId);
+			}
 		}
-
 		return 0;
 	}
 
@@ -659,7 +659,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					showCheckboxes();
 
 					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
-					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin') {
+					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {
 						$(".checkforselect").each(function () {
 							var checkboxValue = $(this).val();
 							if (TSelectedLines.includes(checkboxValue)) {
@@ -721,9 +721,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$langs->load('massaction@massaction');
 
 		$TContexts = explode(':',$parameters['context']);
-//		var_dump($contexts);exit;
-
-		// TODO make it work on invoices and orders before adding this button
 
 		if(in_array('ordercard', $TContexts) || in_array('propalcard', $TContexts) || in_array('invoicecard', $TContexts)) {
 
@@ -740,6 +737,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				'actionSplitDelete' => 'SplitDeleteOk',
 				'actionSplit' => 'SplitOk',
 				'actionSplitCopy' => 'SplitCopyOk',
+				'actionCreateSupplierPrice' => 'CreateSupplierPriceOk',
 			];
 
 			foreach ($TActions as $key => $message) {
@@ -753,16 +751,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 			if ($displayButton) {
-
-				if($object->element=='facture')$idvar = 'facid';
-				else $idvar='id';
+				if($object->element=='facture') $idvar = 'facid';
+				else $idvar = 'id';
 				if($object->element == 'propal') {
 					$fiche = '/comm/propal/card.php';
-				}
-				else if($object->element == 'commande') {
+				} else if($object->element == 'commande') {
 					$fiche = '/commande/card.php';
-				}
-				else if($object->element == 'facture') {
+				} else if($object->element == 'facture') {
 					$fiche = '/compta/facture/card.php';
 				}
 
@@ -771,8 +766,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					var currentAction = "<?php echo $action ?>";
 					$(document).ready(function() {
-
-
 						if(currentAction == "cut") {
 							$('#pop-split').remove();
 							$('body').append('<div id="pop-split"></div>');
@@ -789,9 +782,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 											text: "<?php echo $langs->transnoentities('SimplyCopy'); ?>",
 											title: "<?php echo $langs->transnoentities('SimplyCopyTitle'); ?>",
 											click: function() {
-
 												$('#splitform input[name=action]').val('copy');
-
 												$.ajax({
 													url: '<?php echo dol_buildpath('/massaction/script/splitLines.php', 1); ?>'
 													, method: 'POST'
@@ -825,7 +816,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 											text: "<?php echo $langs->transnoentities('SplitIt'); ?>",
 											title: "<?php echo $langs->transnoentities('SplitItTitle'); ?>",
 											click: function() {
-
 												$.ajax({
 													url: '<?php echo dol_buildpath('/massaction/script/splitLines.php', 1); ?>'
 													, method: 'POST'
@@ -860,8 +850,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 								});
 							});
 						}
-
-
 					});
 
 				</script><?php
@@ -869,4 +857,5 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 		return 0;
 	}
+
 }
