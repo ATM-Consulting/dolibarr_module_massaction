@@ -340,21 +340,19 @@ class MassAction {
 	 * @param Translate $langs The translation object.
 	 * @param Conf $conf The configuration object.
 	 * @param CommonObject $object The original source object (e.g., Order, Proposal).
-	 * @return void                This function does not return a value but outputs messages.
+	 * @param Array $supplierIds The supplier to send the supplier proposal
+	 * @param Int $templateId The email template to use for sending the supplier proposal
+	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public function handleCreateSupplierPriceAction($db, $user, $langs, $conf, $object, $TSelectedLines): void
+	public function handleCreateSupplierPriceAction($db, $user, $langs, $conf, $object, $TSelectedLines, $supplierIds, $templateId): void
 	{
-		// Ensure we are processing the correct action
-		if (GETPOST('action') !== 'createSupplierPrice' || GETPOST('confirm') !== 'yes') {
-			return;
-		}
+
 		// 1. Initial checks for permissions and input data
 		if (!$this->hasRequiredPermissions($user)) {
 			setEventMessage($langs->trans("ErrorForbidden"), 'errors');
 			return;
 		}
 
-		$supplierIds = GETPOST('supplierid', 'array');
 		if (empty($supplierIds)) {
 			setEventMessage($langs->trans("MassActionErrorNoSuppliersSelected"), 'errors');
 			dol_syslog("MassAction - Error: No suppliers were selected.", LOG_ERR);
@@ -368,7 +366,6 @@ class MassAction {
 			return;
 		}
 
-		$templateId = GETPOST('model_mail', 'int');
 		$successMessages = [];
 		$errorMessages = [];
 

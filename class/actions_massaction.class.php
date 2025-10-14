@@ -35,7 +35,6 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
 require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/supplier_proposal/class/supplier_proposal.class.php';
-require_once DOL_DOCUMENT_ROOT . '/core/class/CMailFile.class.php';
 
 
 
@@ -477,7 +476,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $this->errors, $action);
+				$massAction->handleErrors($TSelectedLines, $massAction->TErrors, $action);
 
 				$action = '';
 
@@ -521,11 +520,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 			// Supplier price request management
-			$massAction->handleCreateSupplierPriceAction($this->db, $user, $langs, $conf, $object, $TSelectedLines);
-
+			if (GETPOST('action') == 'createSupplierPrice' || GETPOST('confirm') == 'yes') {
+				$supplierIds = GETPOST('supplierid', 'array');
+				$templateId = GETPOST('model_mail', 'int');
+				$massAction->handleCreateSupplierPriceAction($this->db, $user, $langs, $conf, $object, $TSelectedLines, $supplierIds, $templateId);
+			}
 		}
-
-
 		return 0;
 	}
 

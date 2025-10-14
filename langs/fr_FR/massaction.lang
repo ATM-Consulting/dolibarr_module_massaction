@@ -117,7 +117,7 @@ BackToModuleList = Retour liste
 # Supplier price request
 #
 MassActionCreateSupplierPrice = Créer une demande de prix
-MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la facture fournisseur pour les %s lignes?
+MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la demande de prix fournisseur pour les %s lignes ?
 MassActionSelectSupplier = Sélectionnez les fournisseurs :
 MassActionSelectModelEmail = Sélectionner le modèle de mail :
 MassActionErrorFailedToSendMailTo = Impossible d'envoyer le mail pour le fournisseur %s

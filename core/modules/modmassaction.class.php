@@ -206,7 +206,9 @@ class modmassaction extends DolibarrModules
 	 */
 	private function _remove_email_template() : void
 	{
-		$label = 'MassActionSupplierProposal';
+		global $langs;
+
+		$label = $langs->trans('MassActionSupplierPriceRequest');
 		$sql = "DELETE FROM " . $this->db->prefix() . "c_email_templates WHERE label = '" . $this->db->escape($label) . "'";
 		$this->db->query($sql);
 	}
