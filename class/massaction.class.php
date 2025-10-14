@@ -341,13 +341,14 @@ class MassAction {
 	 * @param int $templateId The email template to use for sending the supplier proposal
 	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId): void
+	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId): void
 	{
 		global $db, $user, $langs, $conf;
 
 		// 1. Initial checks for permissions and input data
-		if (!$this->hasRequiredPermissionsToCreateSupplierProposal($user)) {
+		if (!self::hasRequiredPermissionsToCreateSupplierProposal($user)) {
 			setEventMessage($langs->trans("ErrorForbidden"), 'errors');
+			dol_syslog("MassAction - Error: User does not have required permissions to create supplier price requests.", LOG_ERR);
 			return;
 		}
 
@@ -358,7 +359,7 @@ class MassAction {
 		}
 
 		// 2. Retrieve the details of the selected product lines
-		$selectedLinesDetails = $this->getSelectedLineDetails($object, $TSelectedLines);
+		$selectedLinesDetails = self::getSelectedLineDetails($object, $TSelectedLines);
 		if (empty($selectedLinesDetails)) {
 			setEventMessage($langs->trans('MASSACTIONERRORCOULDNOTFINDLINEDETAILS'), 'errors');
 			dol_syslog("MassAction - Error: Could not find line details.", LOG_ERR);
@@ -371,7 +372,7 @@ class MassAction {
 		// 3. Loop through each supplier to process their price request
 		foreach ($supplierIds as $supplierId) {
 			try {
-				$resultMessages = $this->processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object);
+				$resultMessages = self::processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object);
 				$successMessages = array_merge($successMessages, $resultMessages);
 			} catch (Exception $e) {
 				$errorMessages[] = $e->getMessage();
@@ -398,7 +399,7 @@ class MassAction {
 	 * @return array                            An array of success messages.
 	 * @throws Exception                        If an error occurs during the process.
 	 */
-	public function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object): array
+	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object): array
 	{
 		global $db, $langs;
 
@@ -409,13 +410,13 @@ class MassAction {
 		$db->begin();
 
 		try {
-			$supplierProposal = $this->createSupplierProposal($supplierId, $selectedLinesDetails, $object);
+			$supplierProposal = self::createSupplierProposal($supplierId, $selectedLinesDetails, $object);
 			$successLog[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1, '', '', 1));
 
-			$this->generateProposalPdf($supplierProposal);
+			self::generateProposalPdf($supplierProposal);
 
 			if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL') && !empty($templateId)) {
-				$this->sendProposalByEmail($supplierProposal, $supplier, $templateId);
+				self::sendProposalByEmail($supplierProposal, $supplier, $templateId);
 				$successLog[] = $langs->trans("MassActionEmailSentTo", $supplier->email);
 			}
 
@@ -437,7 +438,7 @@ class MassAction {
 	 * * @return SupplierProposal The created supplier proposal request.
 	 * * @throws Exception if creation fails.
  */
-	public function createSupplierProposal(int $supplierId, array $lines, CommonObject $object): SupplierProposal
+	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object): SupplierProposal
 	{
 		global $db, $user, $langs;
 
@@ -475,7 +476,7 @@ class MassAction {
 	 * @param SupplierProposal $proposal The price request to generate the PDF for.
 	 * @throws Exception if PDF generation fails.
 	 */
-	public function generateProposalPdf(SupplierProposal $proposal): void
+	public static function generateProposalPdf(SupplierProposal $proposal): void
 	{
 		global $langs;
 
@@ -539,7 +540,7 @@ class MassAction {
 	 * @param array $selectedLineIds An array of selected line IDs.
 	 * @return array
 	 */
-	public function getSelectedLineDetails(CommonObject $object, array $selectedLineIds): array
+	public static function getSelectedLineDetails(CommonObject $object, array $selectedLineIds): array
 	{
 		$details = [];
 		if (empty($selectedLineIds) || !is_array($object->lines)) {
