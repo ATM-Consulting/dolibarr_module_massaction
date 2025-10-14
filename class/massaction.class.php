@@ -512,7 +512,7 @@ class MassAction {
 		$mail = new CMailFile(
 			$subject, $supplier->email, $user->email, $content,
 			[$attachment_filename], ['application/pdf'], [$objectref_sanitized . ".pdf"],
-			'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
+			'', '', -1, 1, getDolGlobalString('MAIN_MAIL_ERRORS_TO')
 		);
 
 		if (!$mail->sendfile()) {
