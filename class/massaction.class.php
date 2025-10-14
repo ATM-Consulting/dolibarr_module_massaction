@@ -272,15 +272,19 @@ class MassAction {
 					'label' => $langs->trans('MassActionSelectSupplier'),
 					'type' => 'other',
 					'name' => 'supplierPrice',
-					'value' => $form->select_company('', 'supplierid', '', 1, 'supplier', 0, [], 0, 'minwidth100', '', '', 1, [], true),
+					'value' => $form->select_company('', 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
 				),
-				array(
+			);
+
+			if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL')) {
+				$formQuestion[] = array(
 					'label' => $langs->trans('MassActionSelectModelEmail'),
 					'type' => 'other',
 					'name' => 'modelEmail',
 					'value' => $form->selectModelMail("", 'supplier_proposal_send', 0, 0, ''),
-				)
-			);
+				);
+			}
+
 		}
 
 		if(empty($actionInFormConfirm) || empty($title) ) {
@@ -304,7 +308,8 @@ class MassAction {
 	 */
 	public static function getMassActionButton(Form $form): string
 	{
-		global $langs;
+		global $langs, $user;
+
 		$nameIcon = ((float) DOL_VERSION <= 18.0) ? 'fa-scissors' : 'fa-cut';
 		$arrayOfMassActions = array();
 
@@ -314,7 +319,10 @@ class MassAction {
 		}
 		$arrayOfMassActions['preeditquantity'] = img_picto('', 'fa-pen', 'class="pictofixedwidth"') . $langs->trans("EditQty");
 		$arrayOfMassActions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");
-		$arrayOfMassActions['preSelectSupplierPrice'] = img_picto('', 'fa-file-signature ', 'class="pictofixedwidth"') . $langs->trans("MassActionCreateSupplierPrice");
+
+		if ($user->hasRight('supplier_proposal', 'creer') || $user->hasRight('supplier_proposal', 'lire')) {
+			$arrayOfMassActions['preSelectSupplierPrice'] = img_picto('', 'fa-file-signature ', 'class="pictofixedwidth"') . $langs->trans("MassActionCreateSupplierPrice");
+		}
 
 		$massActionButton = $form->selectMassAction('', $arrayOfMassActions);
 

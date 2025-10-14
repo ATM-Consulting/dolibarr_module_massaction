@@ -50,7 +50,9 @@ NoDirectoryAvailable=Répertoires non disponibles
 MassActionErrorGeneration=Erreur à la génération
 SetupAutoDownloadTitle=Téléchargement direct
 SetupAutoDownloadDesc=Télécharger automatiquement les fichiers Zip lors de la génération
-SetupAutoSendSupplierPropal= Envoyer automatiquement les demandes de prix fournisseur par mail
+SetupAutoSendSupplierProposal= Envoyer automatiquement les demandes de prix fournisseur par mail
+SetupCreateProposalSupplierToZero= Générer les demandes de prix fournisseur à zéro
+SetupCreateProposalSupplierWithConf= Configuration SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY activées : Les produits n’ayant pas de prix d’achat associé à un fournisseur ne seront pas ajoutés à la demande de prix.
 MassActionLinkSalesperson=Affecter des commerciaux
 MassActionSalesPersonAction=Quelle action souhaitez-vous effectuer ?
 MassActionSelectSalesPerson=Sélectionnez un ou plusieurs commerciaux
@@ -115,7 +117,7 @@ BackToModuleList = Retour liste
 # Supplier price request
 #
 MassActionCreateSupplierPrice = Créer une demande de prix
-MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la facture fournisseur pour les 1 lignes?
+MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la facture fournisseur pour les %s lignes?
 MassActionSelectSupplier = Sélectionnez les fournisseurs :
 MassActionSelectModelEmail Sélectionner le modèle de mail :
 MassActionErrorFailedToSendMailTo = Impossible d'envoyer le mail pour le fournisseur %s
@@ -123,6 +125,7 @@ MassActionSupplierPriceRequestCreatedFor = Demande de prix créer pour le fourni
 
 MassActionSupplierPriceRequest = Demande de prix fournisseur
 MassActionHello = Bonjour,
-MassActionPleaseFindAttachedOurPriceRequest = Veuilliez trouvez ci-joint notre demande de prix pour la référence
+MassActionPleaseFindAttachedOurPriceRequest = Veuillez trouvez ci-joint notre demande de prix pour la référence
 MassActionSincerely = Cordialement
-MassActionErrorNoSuppliersSelected = Veuilliez sélectionner au moins un fournisseur.
+MassActionErrorNoSuppliersSelected = Veuillez sélectionner au moins un fournisseur.
+MassActionEmailSentTo = Email envoyé à l'expéditeur %s

@@ -456,7 +456,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$langs->load('massaction@massaction');
 			$massAction = new MassAction($this->db, $object);
 
-
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
 
@@ -465,15 +464,11 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			if ($action == 'delete_lines' && $confirm == 'yes') {
 				$TRowIds = array_column($object->lines, 'rowid');
 
-				$TErrors = array();
-
 				$this->db->begin();
 
 				foreach ($TSelectedLines as $selectedLine) {
 					$index = array_search(intval($selectedLine), $TRowIds);
-
 					$massAction->deleteLine($index, $selectedLine);
-
 				}
 
 				if(!empty($massAction->TErrors)) {
@@ -482,7 +477,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
+				$massAction->handleErrors($TSelectedLines, $this->errors, $action);
 
 				$action = '';
 
@@ -496,15 +491,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				if ($action == 'edit_quantity') {
 					$quantity = GETPOST('quantity', 'alpha');
-					$TErrors = MassAction::checkFields($action, $quantity);
+					$errors = MassAction::checkFields($action, $quantity);
 				} elseif ($action == 'edit_margin') {
 					$marge_tx = GETPOST('marge_tx', 'alpha');
-					$TErrors = MassAction::checkFields($action, $marge_tx);
+					$errors = MassAction::checkFields($action, $marge_tx);
 				}
 
 				$this->db->begin();
 
-				if (empty($TErrors)) {
+				if (empty($errors)) {
 					foreach ($TSelectedLines as $selectedLine) {
 						$index = array_search(intval($selectedLine), $TRowIds);
 
@@ -519,30 +514,29 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $TErrors, $action);
+				$massAction->handleErrors($TSelectedLines, $errors, $action);
 
 				$action = '';
 
 			}
 
 			if ($action == 'createSupplierPrice' && $confirm == 'yes') {
-				if ($user->hasRight('supplier_proposal', 'creer') || $user->hasRight('supplier_proposal', 'lire')) {
+				if (!$user->hasRight('supplier_proposal', 'creer') || !$user->hasRight('supplier_proposal', 'lire')) {
 					setEventMessage($langs->trans("ErrorForbidden"), 'errors');
 					$action = '';
 					return -1;
 				}
 
-				$TSupplierIds = GETPOST('supplierid', 'array');
+				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
-				$TErrors = array();
 
-				if (empty($TSupplierIds)) {
-					$TErrors[] = $langs->trans("MassActionErrorNoSuppliersSelected");
+				if (empty($supplierIds)) {
+					$errors[] = $langs->trans("MassActionErrorNoSuppliersSelected");
 					dol_syslog("MassAction - Error: No suppliers were selected.", LOG_ERR);
 				}
 
-				if (!empty($TErrors)) {
-					$massAction->handleErrors([], $TErrors, $action);
+				if (!empty($errors)) {
+					$massAction->handleErrors([], $errors, $action);
 					$action = '';
 					return -1;
 				}
@@ -564,7 +558,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 
 				// Loop over each selected supplier to create a price request for each one
-				foreach ($TSupplierIds as $supplierId) {
+				foreach ($supplierIds as $supplierId) {
 					$supplier = new Societe($this->db);
 					$supplier->fetch($supplierId);
 
@@ -578,7 +572,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 						$supplierProposal->fk_project = $object->fk_project;
 					}
 
-
 					$result = $supplierProposal->create($user);
 					if ($result < 0) {
 						$errorMessages[] = $langs->trans("FailedToCreatePriceRequestFor", $supplier->name) . ' : ' . $supplierProposal->error;
@@ -586,10 +579,16 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					}
 
 					if (!$error_for_this_supplier) {
-						// Keep the ID for fetching later because $supplierProposal->lines is empty after addline ??
+						// Keep the ID for fetching later because $supplierProposal->lines is empty after addline
 						$proposalSupplierid = $supplierProposal->id;
 
 						foreach ($selectedLinesDetails as $line) {
+							if (getDolGlobalInt("MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO")) {
+								$line->subprice = 0;
+								$line->tva_tx = 0 ;
+								$line->fk_fournprice = 0 ;
+								$line->pa_ht = 0 ;
+							}
 							$supplierProposal->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, 0, 0, $line->fk_product, $line->remise_percent, 'HT', $line->price, 0,  $line->product_type, $line->rang, $line->special_code, $line->fk_parent_line, $line->fk_fournprice, $line->pa_ht, $line->label);
 						}
 						$supplierProposal->valid($user);
@@ -597,14 +596,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 						$supplierProposal->fetch($proposalSupplierid);
 					}
 
-					if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPAL') && !$error_for_this_supplier && !empty($templateId)) {
+					if (!$error_for_this_supplier) {
 
-						$outputlangs = $langs;
-						if (!empty($supplier->default_lang)) {
-							$outputlangs = new Translate("", $supplier->default_lang);
-						}
-
-						$result = $supplierProposal->generateDocument($supplierProposal->modelpdf, $outputlangs);
+						$result = $supplierProposal->generateDocument($supplierProposal->modelpdf, $langs);
 
 						if ($result <= 0) {
 							$errorMessages[] = $langs->trans("FailedToGeneratePDFFor", $supplier->name) . ' : ' . $supplierProposal->error;
@@ -612,40 +606,46 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 						} else {
 							$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
 							$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
-							$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
 
-							$sql = "SELECT topic, content FROM " . MAIN_DB_PREFIX . "c_email_templates WHERE rowid = " . $templateId;
-							$res = $this->db->query($sql);
+							if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL') && !empty($templateId)) {
+								$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
 
-							$template = $this->db->fetch_object($res);
+								$sql = "SELECT topic, content FROM " . $this->db->prefix() . "c_email_templates WHERE rowid = " . $templateId AND "entity = " . $conf->entity;
+								$res = $this->db->query($sql);
 
-							$substitutionarray = getCommonSubstitutionArray($outputlangs, 0, null, $supplierProposal);
+								$template = $this->db->fetch_object($res);
 
-							complete_substitutions_array($substitutionarray, $outputlangs, $supplierProposal);
+								$substitutionarray = getCommonSubstitutionArray($langs, 0, null, $supplierProposal);
 
-							$subject = make_substitutions($template->topic, $substitutionarray, $outputlangs);
-							$content_after_subst = make_substitutions($template->content, $substitutionarray, $outputlangs);
-							$content = nl2br($content_after_subst); // Convert newlines to <br /> for HTML email
+								complete_substitutions_array($substitutionarray, $langs, $supplierProposal);
 
-							$mail = new CMailFile(
-								$subject, $supplier->email, $user->email, $content,
-								array($attachment_filename), array('application/pdf'), array($objectref_sanitized . ".pdf"),
-								'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
-							);
+								$subject = make_substitutions($template->topic, $substitutionarray, $langs);
+								$content_after_subst = make_substitutions($template->content, $substitutionarray, $langs);
+								$content = nl2br($content_after_subst); // Convert newlines to <br /> for HTML email
 
-							if (!$mail->sendfile()) {
-								$errorMessages[] = $langs->trans("MassActionErrorFailedToSendMailTo", $supplier->name) . ': ' . $mail->error;
-								$error_for_this_supplier = true;
+								$mail = new CMailFile(
+									$subject, $supplier->email, $user->email, $content,
+									array($attachment_filename), array('application/pdf'), array($objectref_sanitized . ".pdf"),
+									'', '', -1, 1, $conf->global->MAIN_MAIL_ERRORS_TO
+								);
+
+								$sendMailResult = $mail->sendfile();
+								if (!$sendMailResult) {
+									$errorMessages[] = $langs->trans("MassActionErrorFailedToSendMailTo", $supplier->name) . ' : ' . $mail->errors;
+									$error_for_this_supplier = true;
+								}
 							}
 						}
 					}
-
 
 					if ($error_for_this_supplier) {
 						$this->db->rollback();
 					} else {
 						$this->db->commit();
 						$successMessages[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1,'','', 1));
+						if ($sendMailResult) {
+							$successMessages[] = $langs->trans("MassActionEmailSentTo", $supplier->email);
+						}
 					}
 				}
 
@@ -660,7 +660,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 		}
-
 
 
 		return 0;
@@ -797,7 +796,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					showCheckboxes();
 
 					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
-					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin') {
+					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {
 						$(".checkforselect").each(function () {
 							var checkboxValue = $(this).val();
 							if (TSelectedLines.includes(checkboxValue)) {
@@ -859,8 +858,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$langs->load('massaction@massaction');
 
 		$TContexts = explode(':',$parameters['context']);
-
-		// TODO make it work on invoices and orders before adding this button
 
 		if(in_array('ordercard', $TContexts) || in_array('propalcard', $TContexts) || in_array('invoicecard', $TContexts)) {
 

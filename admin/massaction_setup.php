@@ -87,17 +87,21 @@ dol_fiche_head(
     "massaction@massaction"
 );
 // Setup page goes here
-$form=new Form($db);
-$var=false;
+$form = new Form($db);
+$var = false;
 print '<table class="noborder" width="100%">';
 if(!function_exists('setup_print_title')){
     print '<div class="error" >'.$langs->trans('AbricotNeedUpdate').' : <a href="http://wiki.atm-consulting.fr/index.php/Accueil#Abricot" target="_blank"><i class="fa fa-info"></i> Wiki</a></div>';
     exit;
 }
 setup_print_title("Parameters");
+
+$PredifinedPrice = getDolGlobalInt('SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY') ? $langs->trans('SetupCreateProposalSupplierWithConf') : null;
+
 // Example with a yes / no select
 setup_print_on_off('MASSACTION_AUTO_DOWNLOAD', $langs->trans('SetupAutoDownloadTitle') , $langs->trans('SetupAutoDownloadDesc'));
-setup_print_on_off('MASSACTION_AUTO_SEND_SUPPLIER_PROPAL', $langs->trans('SetupAutoSendSupplierPropal'));
+setup_print_on_off('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL', $langs->trans('SetupAutoSendSupplierProposal'), $PredifinedPrice);
+setup_print_on_off('MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO', $langs->trans('SetupCreateProposalSupplierToZero'));
 print '</table>';
 dol_fiche_end(-1);
 llxFooter();
