@@ -522,7 +522,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			if ($action == 'createSupplierPrice') {
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, $templateId);
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId);
 			}
 		}
 		return 0;
