@@ -1,6 +1,8 @@
 # Changelog for massaction
 
 ## Unreleased
+
+## Release 1.7
 - NEW : Add mass action to create a new supplier proposal from a customer proposal or order - *09/10/2025* - 1.7.0
 
 ## Release 1.6
