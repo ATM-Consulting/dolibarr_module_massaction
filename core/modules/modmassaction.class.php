@@ -38,11 +38,11 @@ class modmassaction extends DolibarrModules
 	 *
 	 *   @param      DoliDB		$db      Database handler
 	 */
-	function __construct($db)
+	public function __construct($db)
 	{
-        global $langs,$conf;
+		global $langs,$conf;
 
-        $this->db = $db;
+		$this->db = $db;
 
 		$this->editor_name = 'ATM Consulting';
 		$this->editor_url = 'https://www.atm-consulting.fr';
@@ -61,7 +61,7 @@ class modmassaction extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "ModuleMassActionDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.7.0';
+		$this->version = '1.7.1';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -101,19 +101,18 @@ class modmassaction extends DolibarrModules
 		// );
 		$this->const = array();
 
-        $this->tabs = array();
+		$this->tabs = array();
 
-        // Dictionaries
-	    if (! isModEnabled('massaction'))
-        {
-        	$conf->massaction=new stdClass();
-        	$conf->massaction->enabled=0;
-        }
+		// Dictionaries
+		if (! isModEnabled('massaction')) {
+			$conf->massaction=new stdClass();
+			$conf->massaction->enabled=0;
+		}
 		$this->dictionaries=array();
 
-        // Boxes
+		// Boxes
 		// Add here list of php file(s) stored in core/boxes that contains class to show a box.
-        $this->boxes = array();			// List of boxes
+		$this->boxes = array();			// List of boxes
 
 		// Permissions
 		$this->rights = array();		// Permission array used by this module
@@ -122,7 +121,6 @@ class modmassaction extends DolibarrModules
 		// Main menu entries
 		$this->menu = array();			// List of menus to add
 		$r=0;
-
 	}
 
 	/**
@@ -130,14 +128,14 @@ class modmassaction extends DolibarrModules
 	 *		The init function add constants, boxes, permissions and menus (defined in constructor) into Dolibarr database.
 	 *		It also creates data directories
 	 *
-     *      @param      string	$options    Options when enabling module ('', 'noboxes')
+	 *      @param      string	$options    Options when enabling module ('', 'noboxes')
 	 *      @return     int             	1 if OK, 0 if KO
 	 */
-	function init($options='')
+	public function init($options = '')
 	{
 		$sql = array();
 
-		define('INC_FROM_DOLIBARR',true);
+		define('INC_FROM_DOLIBARR', true);
 
 		$this->addEmailTemplateForSupplierProposal();
 
@@ -149,10 +147,10 @@ class modmassaction extends DolibarrModules
 	 *      Remove from database constants, boxes and permissions from Dolibarr database.
 	 *		Data directories are not deleted
 	 *
-     *      @param      string	$options    Options when enabling module ('', 'noboxes')
+	 *      @param      string	$options    Options when enabling module ('', 'noboxes')
 	 *      @return     int             	1 if OK, 0 if KO
 	 */
-	function remove($options='')
+	public function remove($options = '')
 	{
 		$sql = array();
 		return $this->_remove($sql, $options);
@@ -177,7 +175,6 @@ class modmassaction extends DolibarrModules
 		$obj = $this->db->fetch_object($res);
 
 		if ($obj->total == 0) {
-
 			$topic = $langs->transnoentities('MassActionSupplierPriceRequest') . ' __REF__';
 			$content = $langs->transnoentities('MassActionHello') . " __THIRDPARTY_NAME__,\n\n";
 			$content .= $langs->transnoentities('MassActionPleaseFindAttachedOurPriceRequest') . " __REF__.\n\n";
@@ -196,6 +193,4 @@ class modmassaction extends DolibarrModules
 			$this->db->query($sql);
 		}
 	}
-
-
 }
