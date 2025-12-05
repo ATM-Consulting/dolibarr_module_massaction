@@ -448,7 +448,12 @@ class MassAction {
 		if (!empty($object->fk_project)) {
 			$supplierProposal->fk_project = $object->fk_project;
 		}
-
+		// Keep origin info so triggers can detect source document
+		if (!empty($object->id) && !empty($object->element) && $object->element === 'propal') {
+			$supplierProposal->origin = 'propal';
+			$supplierProposal->origin_id = $object->id;
+			$supplierProposal->linked_objects['propal'] = $object->id;
+		}
 		if ($supplierProposal->create($user) < 0) {
 			throw new Exception($langs->trans("MassActionFailedToCreateSupplierProposal" . $supplierProposal->error));
 		}
@@ -456,7 +461,6 @@ class MassAction {
 		foreach ($lines as $line) {
 			if (getDolGlobalInt("MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO")) {
 				$line->subprice = 0;
-				$line->tva_tx = 0;
 				$line->fk_fournprice = 0;
 				$line->pa_ht = 0;
 			}
