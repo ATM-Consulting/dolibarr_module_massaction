@@ -1,6 +1,9 @@
 # Changelog for massaction
 
 ## Unreleased
+
+## Release 1.7
+- FIX : When converting a quote into a price request, VAT must be charged. - *05/11/2025* -1.7.1
 - NEW : Add mass action to create a new supplier proposal from a customer proposal or order - *09/10/2025* - 1.7.0
 
 ## Release 1.6
