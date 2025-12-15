@@ -1,5 +1,6 @@
 <?php
 
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
 
 class MassAction {
@@ -227,7 +228,9 @@ class MassAction {
 		$question = null;
 		$title = null;
 		$actionInFormConfirm = null;
-		$formQuestion = null;
+		$formQuestion = array();
+		$useajax = 0;
+		$disableFormTag = 0;
 
 		$nbrOfSelectedLines = count($TSelectedLines);
 
@@ -276,6 +279,25 @@ class MassAction {
 					'name' => 'supplierPrice',
 					'value' => $form->select_company('', 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
 				),
+				array(
+					'label' => $langs->trans('AttachedFiles'),
+					'type' => 'other',
+					'name' => 'massaction_files[]',
+					'value' =>
+						'<div class="blockfileupload paddingleft">'.
+						'<input class="flat minwidth400 maxwidth200onsmartphone massaction-file-input" type="file" name="userfile[]" multiple>'.
+						'<input type="hidden" name="sendit" value="">'.
+						'</div>'.
+						self::renderPersistedUploadsList().
+						'<div class="opacitymedium small paddingleft">'.$langs->trans('UploadFormMultiSelectHelp').'</div>'.
+						'<script nonce="' . getNonce() . '" type="text/javascript">'.
+						'$(document).ready(function(){'.
+						'$(".massaction-remove-file").on("click", function(e){ var fname=$(this).data("filename"); $(".removedfilehidden").val(fname); $("input[name=\'action\']").val("preSelectSupplierPrice"); $("#confirm").val("no"); });'.
+						'$(".massaction-file-input").on("change", function(){ if($(this).val()){ $("input[name=\'action\']").val("preSelectSupplierPrice"); $("#confirm").val("no"); $("input[name=\'sendit\']").val("1"); $("#searchFormList").submit(); } });'.
+						'$(".confirmvalidatebutton").on("click", function(){ $("input[name=\'action\']").val("createSupplierPrice"); $("#confirm").val("yes"); });'.
+						'});'.
+						'</script>',
+				),
 			);
 
 			if (getDolGlobalInt('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL')) {
@@ -286,6 +308,16 @@ class MassAction {
 					'value' => $form->selectModelMail("", 'supplier_proposal_send', 0, 0, ''),
 				);
 			}
+			$useajax = 0; // File upload not compatible with ajax dialog
+			$disableFormTag = 1;
+		}
+
+		if (!empty($TSelectedLines)) {
+			$formQuestion[] = array(
+				'type' => 'hidden',
+				'name' => 'selectedLines',
+				'value' => implode(',', $TSelectedLines),
+			);
 
 		}
 
@@ -296,10 +328,14 @@ class MassAction {
 		$formConfirm = $form->formconfirm(
 			$page, $title, $question, $actionInFormConfirm, $formQuestion,
 			'1', // Vu avec CDP Benoit . préselectionné sur oui
-			0,
+			$useajax,
 			200, 500,
-			0
+			$disableFormTag
 		);
+
+		if ($action === 'preSelectSupplierPrice' && strpos($formConfirm, 'enctype="multipart/form-data"') === false) {
+			$formConfirm = preg_replace('/<form([^>]*)method="POST"/i', '<form$1method="POST" enctype="multipart/form-data"', $formConfirm, 1);
+		}
 
 		return $formConfirm;
 	}
@@ -339,9 +375,10 @@ class MassAction {
 	 * @param array $TSelectedLines The lines to process.
 	 * @param array $supplierIds The supplier to send the supplier proposal
 	 * @param int $templateId The email template to use for sending the supplier proposal
+	 * @param array $uploadedFiles The uploaded files to attach to the proposal
 	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId): void
+	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId, array $uploadedFiles = []): void
 	{
 		global $db, $user, $langs, $conf;
 
@@ -369,14 +406,30 @@ class MassAction {
 		$successMessages = [];
 		$errorMessages = [];
 
-		// 3. Loop through each supplier to process their price request
-		foreach ($supplierIds as $supplierId) {
-			try {
-				$resultMessages = self::processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object);
-				$successMessages = array_merge($successMessages, $resultMessages);
-			} catch (Exception $e) {
-				$errorMessages[] = $e->getMessage();
+		$preparedUploads = self::persistUploadedFiles($uploadedFiles);
+		$existingUploads = self::loadPersistedUploads();
+		if (!empty($existingUploads)) {
+			$preparedUploads['files'] = array_merge($existingUploads, $preparedUploads['files']);
+			if (empty($preparedUploads['tempdir'])) {
+				$preparedUploads['tempdir'] = self::getTemporaryUploadDir($user);
 			}
+		}
+		if (!empty($preparedUploads['errors'])) {
+			setEventMessages($langs->trans('ErrorFileNotUploaded'), $preparedUploads['errors'], 'warnings');
+		}
+
+		// 3. Loop through each supplier to process their price request
+		try {
+			foreach ($supplierIds as $supplierId) {
+				try {
+					$resultMessages = self::processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object, $preparedUploads['files']);
+					$successMessages = array_merge($successMessages, $resultMessages);
+				} catch (Exception $e) {
+					$errorMessages[] = $e->getMessage();
+				}
+			}
+		} finally {
+			self::cleanupTemporaryUploads($preparedUploads['files'], $preparedUploads['tempdir']);
 		}
 
 		// 4. Display status messages at the end of the process
@@ -396,10 +449,11 @@ class MassAction {
 	 * @param array $selectedLinesDetails         An array of selected line details.
 	 * @param int $templateId                    The ID of the email template to use for sending the supplier proposal.
 	 * @param CommonObject $object              The original source object (e.g., Order, Proposal).
+	 * @param array $uploadedFiles              Uploaded files coming from the confirmation form.
 	 * @return array                            An array of success messages.
 	 * @throws Exception                        If an error occurs during the process.
 	 */
-	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object): array
+	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object, array $uploadedFiles = []): array
 	{
 		global $db, $langs;
 
@@ -410,7 +464,7 @@ class MassAction {
 		$db->begin();
 
 		try {
-			$supplierProposal = self::createSupplierProposal($supplierId, $selectedLinesDetails, $object);
+			$supplierProposal = self::createSupplierProposal($supplierId, $selectedLinesDetails, $object, $uploadedFiles);
 			$successLog[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1, '', '', 1));
 
 			self::generateProposalPdf($supplierProposal);
@@ -435,10 +489,11 @@ class MassAction {
 	 * * @param int $supplierId Id of the supplier
 	 * * @param array $lines Array of lines to process
 	 * * @param CommonObject $object The original source object (e.g., Order, Proposal)
+	 * * @param array $uploadedFiles Files uploaded from confirmation form
 	 * * @return SupplierProposal The created supplier proposal request.
 	 * * @throws Exception if creation fails.
  */
-	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object): SupplierProposal
+	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object, array $uploadedFiles = []): SupplierProposal
 	{
 		global $db, $user, $langs;
 
@@ -465,7 +520,305 @@ class MassAction {
 		$supplierProposal->add_object_linked($object->element, $object->id);
 		$supplierProposal->fetch($supplierProposal->id);
 
+		$uploadErrors = self::storeUploadedFiles($supplierProposal, $uploadedFiles);
+		if (!empty($uploadErrors)) {
+			setEventMessages($langs->trans('ErrorFileNotUploaded'), $uploadErrors, 'warnings');
+		}
+
 		return $supplierProposal;
+	}
+
+	/**
+	 * @param SupplierProposal $proposal
+	 * @param array $uploadedFiles
+	 * @return array
+	 */
+	private static function storeUploadedFiles(SupplierProposal $proposal, array $uploadedFiles): array
+	{
+		global $conf, $langs;
+
+		$errors = array();
+
+		if (empty($uploadedFiles)) {
+			return $errors;
+		}
+
+		$entity = !empty($proposal->entity) ? (int) $proposal->entity : $conf->entity;
+		$baseDir = !empty($conf->supplier_proposal->multidir_output[$entity]) ? $conf->supplier_proposal->multidir_output[$entity] : $conf->supplier_proposal->dir_output;
+		$refSanitized = dol_sanitizeFileName($proposal->ref);
+		$targetDir = $baseDir . '/' . $refSanitized;
+
+		if (!dol_is_dir($targetDir) && dol_mkdir($targetDir) < 0) {
+			$errors[] = $langs->trans('ErrorFailedToCreateDir', $targetDir);
+			return $errors;
+		}
+
+		foreach ($uploadedFiles as $file) {
+			$errorCode = $file['error'] ?? 0;
+			$tmpName = $file['tmp_name'] ?? '';
+			$originalName = $file['name'] ?? '';
+
+			if ($errorCode !== UPLOAD_ERR_OK || empty($tmpName)) {
+				if ($errorCode !== UPLOAD_ERR_NO_FILE) {
+					$errors[] = self::formatUploadErrorMessage($originalName, $errorCode);
+				}
+				continue;
+			}
+
+			$destination = self::buildSafeDestinationPath($targetDir, $originalName);
+
+			$copyResult = dol_copy($tmpName, $destination, '0', 0, 1);
+			if ($copyResult <= 0) {
+				$errors[] = self::formatUploadErrorMessage($originalName, $copyResult);
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * @param string $targetDir
+	 * @param string $originalName
+	 * @return string
+	 */
+	private static function buildSafeDestinationPath(string $targetDir, string $originalName): string
+	{
+		$sanitizedName = dol_sanitizeFileName($originalName);
+		if (empty($sanitizedName)) {
+			$sanitizedName = 'attachment';
+		}
+
+		$pathInfo = pathinfo($sanitizedName);
+		$baseName = $pathInfo['filename'] ?? 'attachment';
+		$extension = (!empty($pathInfo['extension'])) ? '.' . $pathInfo['extension'] : '';
+
+		$candidate = $baseName . $extension;
+		$index = 1;
+		while (file_exists($targetDir . '/' . $candidate)) {
+			$candidate = $baseName . '_' . $index . $extension;
+			$index++;
+		}
+
+		return $targetDir . '/' . $candidate;
+	}
+
+	/**
+	 * @param string $fileName
+	 * @param string|int $errorCode
+	 * @return string
+	 */
+	private static function formatUploadErrorMessage(string $fileName, $errorCode): string
+	{
+		global $langs;
+
+		if (is_string($errorCode) && !is_numeric($errorCode)) {
+			$errorLabel = $langs->trans($errorCode);
+		} elseif ($errorCode === UPLOAD_ERR_INI_SIZE || $errorCode === UPLOAD_ERR_FORM_SIZE) {
+			$errorLabel = $langs->trans('ErrorFileSizeTooLarge');
+		} elseif ($errorCode === UPLOAD_ERR_PARTIAL) {
+			$errorLabel = $langs->trans('ErrorPartialFile');
+		} elseif ($errorCode === UPLOAD_ERR_NO_TMP_DIR) {
+			$errorLabel = $langs->trans('ErrorNoTmpDir');
+		} elseif ($errorCode === UPLOAD_ERR_CANT_WRITE) {
+			$errorLabel = $langs->trans('ErrorFailedToWriteInDir', '');
+		} elseif ($errorCode === UPLOAD_ERR_EXTENSION) {
+			$errorLabel = $langs->trans('ErrorUploadBlockedByAddon');
+		} else {
+			$errorLabel = $langs->trans('ErrorFileNotUploaded');
+		}
+
+		$fileLabel = !empty($fileName) ? $fileName : $langs->trans('File');
+
+		return $fileLabel . ' - ' . $errorLabel;
+	}
+
+	/**
+	 * Move uploaded files to a temporary directory so they can be reused for each supplier.
+	 *
+	 * @param array $uploadedFiles
+	 * @return array{files: array, errors: array, tempdir: string}
+	 */
+	public static function persistUploadedFiles(array $uploadedFiles): array
+	{
+		global $conf, $user, $langs;
+
+		$result = array('files' => array(), 'errors' => array(), 'tempdir' => '');
+
+		if (empty($uploadedFiles)) {
+			return $result;
+		}
+
+		// Normalize PHP files array if necessary
+		if (isset($uploadedFiles['name']) && is_array($uploadedFiles['name'])) {
+			$normalized = array();
+			$names = $uploadedFiles['name'];
+			$tmpNames = $uploadedFiles['tmp_name'];
+			$types = $uploadedFiles['type'];
+			$sizes = $uploadedFiles['size'];
+			$errors = $uploadedFiles['error'];
+			$count = count($names);
+			for ($i = 0; $i < $count; $i++) {
+				$normalized[] = array(
+					'name' => $names[$i],
+					'tmp_name' => $tmpNames[$i],
+					'type' => $types[$i],
+					'size' => $sizes[$i],
+					'error' => $errors[$i],
+				);
+			}
+			$uploadedFiles = $normalized;
+		}
+
+		$tempDir = self::getTemporaryUploadDir($user);
+		if (!dol_is_dir($tempDir) && dol_mkdir($tempDir) < 0) {
+			$result['errors'][] = $langs->trans('ErrorFailedToCreateDir', $tempDir);
+			return $result;
+		}
+		$result['tempdir'] = $tempDir;
+
+		foreach ($uploadedFiles as $file) {
+			$errorCode = $file['error'] ?? 0;
+			$tmpName = $file['tmp_name'] ?? '';
+			$originalName = $file['name'] ?? '';
+
+			if ($errorCode !== UPLOAD_ERR_OK || empty($tmpName)) {
+				if ($errorCode !== UPLOAD_ERR_NO_FILE) {
+					$result['errors'][] = self::formatUploadErrorMessage($originalName, $errorCode);
+				}
+				continue;
+			}
+
+			$destination = self::buildSafeDestinationPath($tempDir, $originalName);
+			$moveResult = dol_move_uploaded_file($tmpName, $destination, 1, 0, $errorCode, 0, 'massaction_files', $tempDir);
+			if (is_string($moveResult) || $moveResult <= 0) {
+				$result['errors'][] = self::formatUploadErrorMessage($originalName, $moveResult);
+				continue;
+			}
+
+			$file['tmp_name'] = $destination;
+			$file['error'] = UPLOAD_ERR_OK;
+			$result['files'][] = $file;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * @param array $files
+	 * @param string $tempDir
+	 * @return void
+	 */
+	public static function cleanupTemporaryUploads(array $files = array(), string $tempDir = ''): void
+	{
+		global $user;
+
+		if (empty($tempDir)) {
+			$tempDir = self::getTemporaryUploadDir($user);
+		}
+
+		if (empty($files)) {
+			$files = self::loadPersistedUploads();
+		}
+
+		foreach ($files as $file) {
+			if (!empty($file['tmp_name']) && file_exists($file['tmp_name'])) {
+				dol_delete_file($file['tmp_name'], 0, 1);
+			}
+		}
+
+		if (!empty($tempDir) && dol_is_dir($tempDir)) {
+			dol_delete_dir_recursive($tempDir);
+		}
+	}
+
+	/**
+	 * @param User $user
+	 * @return string
+	 */
+	public static function getTemporaryUploadDir(User $user): string
+	{
+		global $conf;
+
+		$baseDir = !empty($conf->supplier_proposal->multidir_output[$conf->entity]) ? $conf->supplier_proposal->multidir_output[$conf->entity] : $conf->supplier_proposal->dir_output;
+		return rtrim($baseDir, '/') . '/temp/massaction/' . (int) $user->id;
+	}
+
+	/**
+	 * Load files already uploaded in temp directory.
+	 *
+	 * @return array<int, array{name:string,tmp_name:string,error:int}>
+	 */
+	public static function loadPersistedUploads(): array
+	{
+		global $user;
+
+		$tempDir = self::getTemporaryUploadDir($user);
+		if (!dol_is_dir($tempDir)) {
+			return array();
+		}
+
+		$files = array();
+		$list = dol_dir_list($tempDir, 'files', 0);
+		foreach ($list as $item) {
+			if (empty($item['fullname'])) {
+				continue;
+			}
+			$files[] = array(
+				'name' => $item['name'],
+				'tmp_name' => $item['fullname'],
+				'error' => UPLOAD_ERR_OK,
+			);
+		}
+
+		return $files;
+	}
+
+	/**
+	 * Remove a file from temp uploads.
+	 *
+	 * @param string $filename
+	 * @return int
+	 */
+	public static function removePersistedUpload(string $filename): int
+	{
+		global $user;
+
+		$tempDir = self::getTemporaryUploadDir($user);
+		$sanitized = dol_sanitizeFileName($filename);
+		$fullpath = $tempDir . '/' . $sanitized;
+		if (dol_is_file($fullpath)) {
+			return dol_delete_file($fullpath, 0, 1) ? 1 : -1;
+		}
+		return -1;
+	}
+
+	/**
+	 * Render HTML list of persisted uploads.
+	 *
+	 * @return string
+	 */
+	private static function renderPersistedUploadsList(): string
+	{
+		$files = self::loadPersistedUploads();
+		if (empty($files)) {
+			return '';
+		}
+
+		$theme = dol_escape_htmltag($GLOBALS['conf']->theme);
+		$out = '<div class="paddingleft margintoponly">';
+		$out .= '<input type="hidden" class="removedfilehidden" name="remove_massaction_file" value="">'."\n";
+		$out .= '<div class="flex flexcolumn gap1">';
+		foreach ($files as $file) {
+			$out .= '<div class="inline-block">';
+			$out .= img_mime($file['name']).' '.dol_escape_htmltag($file['name']);
+			$out .= ' <input type="image"'
+				.' src="'.DOL_URL_ROOT.'/theme/'.$theme.'/img/delete.png"'
+				.' class="removedfile input-nobottom massaction-remove-file" data-filename="'.dol_escape_htmltag($file['name']).'" alt="'.dol_escape_htmltag($GLOBALS['langs']->trans('Delete')).'">';
+			$out .= '</div>';
+		}
+		$out .= '</div></div>';
+
+		return $out;
 	}
 
 	/**
@@ -496,8 +849,13 @@ class MassAction {
 		global $db, $user, $langs, $conf;
 
 		$objectref_sanitized = dol_sanitizeFileName($supplierProposal->ref);
-		$dir = $conf->supplier_proposal->dir_output . "/" . $objectref_sanitized;
-		$attachment_filename = $dir . "/" . $objectref_sanitized . ".pdf";
+		$baseDir = !empty($conf->supplier_proposal->multidir_output[$supplierProposal->entity]) ? $conf->supplier_proposal->multidir_output[$supplierProposal->entity] : $conf->supplier_proposal->dir_output;
+		$dir = $baseDir . "/" . $objectref_sanitized;
+		$pdfPath = $dir . "/" . $objectref_sanitized . ".pdf";
+
+		if (!dol_is_file($pdfPath)) {
+			throw new Exception($langs->trans('ErrorFileNotFound', $pdfPath));
+		}
 
 		$formmail = new FormMail($db);
 
@@ -507,9 +865,34 @@ class MassAction {
 		$subject = make_substitutions($template->topic, $substitutionarray, $langs);
 		$content = nl2br(make_substitutions($template->content, $substitutionarray, $langs));
 
+		$extraPaths = array();
+		$extraMimeTypes = array();
+		$extraBasenames = array();
+
+		$documents = dol_dir_list($dir, 'files', 0, '', '', '', 'fullname', 1);
+		foreach ($documents as $document) {
+			if (empty($document['fullname']) || !is_file($document['fullname'])) {
+				continue;
+			}
+			$basename = basename($document['fullname']);
+			if ($basename === 'index.html' || preg_match('/\.meta$/', $basename)) {
+				continue;
+			}
+			if (realpath($document['fullname']) === realpath($pdfPath)) {
+				continue;
+			}
+			$extraPaths[] = $document['fullname'];
+			$extraMimeTypes[] = dol_mimetype($document['fullname']);
+			$extraBasenames[] = $basename;
+		}
+
+		$attachedfiles = array_merge(array($pdfPath), $extraPaths);
+		$mimetype = array_merge(array('application/pdf'), $extraMimeTypes);
+		$filename = array_merge(array(basename($pdfPath)), $extraBasenames);
+
 		$mail = new CMailFile(
 			$subject, $supplier->email, $user->email, $content,
-			[$attachment_filename], ['application/pdf'], [$objectref_sanitized . ".pdf"],
+			$attachedfiles, $mimetype, $filename,
 			'', '', -1, 1, getDolGlobalString('MAIN_MAIL_ERRORS_TO')
 		);
 
