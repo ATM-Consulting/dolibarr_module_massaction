@@ -687,7 +687,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 					showCheckboxes();
 
-					if ("<?php echo $action; ?>" === 'preSelectSupplierPrice') {
+					if (currentAction === 'preSelectSupplierPrice') {
 						$('#searchFormList').attr('enctype', 'multipart/form-data');
 						$('.massaction-remove-file').on('click', function (e) {
 							e.preventDefault();

@@ -273,7 +273,7 @@ class MassAction {
 			$title = $langs->trans('MassActionConfirmEdit');
 			$question = $langs->trans('MassActionConfirmcreateSupplierPrice', $nbrOfSelectedLines);
 			$preselectedSuppliers = GETPOST('supplierid', 'array');
-			$preselectedModel = GETPOST('model_mail', 'alpha');
+			$preselectedModel = GETPOST('model_mail', 'int');
 			$formQuestion = array(
 				array(
 					'label' => $langs->trans('MassActionSelectSupplier'),
