@@ -135,3 +135,6 @@ MassActionErrorCouldNotFindlineDetails = Impossibles de récupérer le détails 
 MassActionFailedToCreateSupplierProposal = Échec de la création de la demande de prix fournisseur :
 MassActionFailedToGeneratePDF =	Échec de génération du pdf :
 MassActionFailedToSendEmail = Échec de l'envoi du mail :
+FileTransmitted=Fichier transmis
+FileDeleted=Fichier supprimé
+ErrorFailedToDeleteFile=Impossible de supprimer le fichier %s

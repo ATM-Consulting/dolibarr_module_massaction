@@ -546,6 +546,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$action = 'preSelectSupplierPrice';
 			}
 			if ($action == 'createSupplierPrice') {
+				if ($confirm !== 'yes') {
+					MassAction::cleanupTemporaryUploads();
+					$action = '';
+					return 0;
+				}
+
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
 				$uploadedFilesData = $this->extractUploadedFilesFromRequest('massaction_files');
@@ -707,7 +713,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 						});
 						$('.confirmvalidatebutton').on('click', function () {
 							$('input[name="action"]').val('createSupplierPrice');
-							$('#confirm').val('yes');
 						});
 					}
 

@@ -120,3 +120,6 @@ MassActionErrorCouldNotFindlineDetails = Unable to find line details
 MassActionFailedToCreateSupplierProposal = Failed to create supplier proposal :
 MassActionFailedToGeneratePDF =	Failed to generate PDF :
 MassActionFailedToSendEmail = Failed to send email :
+FileTransmitted=File transmitted
+FileDeleted=File deleted
+ErrorFailedToDeleteFile=Failed to delete file %s
