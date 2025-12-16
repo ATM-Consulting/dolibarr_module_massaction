@@ -445,6 +445,8 @@ class MassAction {
 		$supplierProposal = new SupplierProposal($db);
 		$supplierProposal->socid = $supplierId;
 		$supplierProposal->date_creation = dol_now();
+		$supplierProposal->origin_type = $object->element;
+		$supplierProposal->origin_id = $object->id;
 		if (!empty($object->fk_project)) {
 			$supplierProposal->fk_project = $object->fk_project;
 		}
