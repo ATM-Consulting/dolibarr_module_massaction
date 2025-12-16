@@ -322,7 +322,7 @@ class MassAction {
 
 		$formConfirm = $form->formconfirm(
 			$page, $title, $question, $actionInFormConfirm, $formQuestion,
-			'1', // Vu avec CDP Benoit . préselectionné sur oui
+			'1', // Pre-selected to 'Yes'
 			$useajax,
 			200, 500,
 			$disableFormTag
