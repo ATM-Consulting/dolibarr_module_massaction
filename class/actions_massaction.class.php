@@ -670,12 +670,10 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					var TSelectedLines = selectedLines.split(',');
 
 					var currentAction = "<?php echo $action ?>";
-					var formEnctype = <?php echo json_encode($action === 'preSelectSupplierPrice' ? 'enctype="multipart/form-data"' : ''); ?>;
-
 					var toShow = formConfirm !== '' ? formConfirm : (massActionButton || '');
 
 					var form = `
-						<form method="post" id="searchFormList" action="` + action + `" ` + formEnctype + `>
+						<form method="post" id="searchFormList" action="` + action + `">
 							<input type="hidden" name="token" value="` + token + `">
 							<input type="hidden" name="selectedLines" id="selectedLines" value="` + selectedLines + `">
 							<input type="hidden" name="action" value="">
@@ -688,6 +686,30 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$('#addproduct:last-child').before(form);
 
 					showCheckboxes();
+
+					if ("<?php echo $action; ?>" === 'preSelectSupplierPrice') {
+						$('#searchFormList').attr('enctype', 'multipart/form-data');
+						$('.massaction-remove-file').on('click', function (e) {
+							e.preventDefault();
+							var fname = $(this).data('filename');
+							$('.removedfilehidden').val(fname);
+							$('input[name="action"]').val('preSelectSupplierPrice');
+							$('#confirm').val('no');
+							$('#searchFormList').submit();
+						});
+						$('.massaction-file-input').on('change', function () {
+							if ($(this).val()) {
+								$('input[name="action"]').val('preSelectSupplierPrice');
+								$('#confirm').val('no');
+								$('input[name="sendit"]').val('1');
+								$('#searchFormList').submit();
+							}
+						});
+						$('.confirmvalidatebutton').on('click', function () {
+							$('input[name="action"]').val('createSupplierPrice');
+							$('#confirm').val('yes');
+						});
+					}
 
 					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
 					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {

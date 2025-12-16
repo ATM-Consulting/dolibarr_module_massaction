@@ -272,12 +272,14 @@ class MassAction {
 			$actionInFormConfirm = 'createSupplierPrice';
 			$title = $langs->trans('MassActionConfirmEdit');
 			$question = $langs->trans('MassActionConfirmcreateSupplierPrice', $nbrOfSelectedLines);
+			$preselectedSuppliers = GETPOST('supplierid', 'array');
+			$preselectedModel = GETPOST('model_mail', 'alpha');
 			$formQuestion = array(
 				array(
 					'label' => $langs->trans('MassActionSelectSupplier'),
 					'type' => 'other',
 					'name' => 'supplierPrice',
-					'value' => $form->select_company('', 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
+					'value' => $form->select_company($preselectedSuppliers, 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
 				),
 				array(
 					'label' => $langs->trans('AttachedFiles'),
@@ -288,15 +290,7 @@ class MassAction {
 						'<input class="flat minwidth400 maxwidth200onsmartphone massaction-file-input" type="file" name="userfile[]" multiple>'.
 						'<input type="hidden" name="sendit" value="">'.
 						'</div>'.
-						self::renderPersistedUploadsList().
-						'<div class="opacitymedium small paddingleft">'.$langs->trans('UploadFormMultiSelectHelp').'</div>'.
-						'<script nonce="' . getNonce() . '" type="text/javascript">'.
-						'$(document).ready(function(){'.
-						'$(".massaction-remove-file").on("click", function(e){ var fname=$(this).data("filename"); $(".removedfilehidden").val(fname); $("input[name=\'action\']").val("preSelectSupplierPrice"); $("#confirm").val("no"); });'.
-						'$(".massaction-file-input").on("change", function(){ if($(this).val()){ $("input[name=\'action\']").val("preSelectSupplierPrice"); $("#confirm").val("no"); $("input[name=\'sendit\']").val("1"); $("#searchFormList").submit(); } });'.
-						'$(".confirmvalidatebutton").on("click", function(){ $("input[name=\'action\']").val("createSupplierPrice"); $("#confirm").val("yes"); });'.
-						'});'.
-						'</script>',
+						self::renderPersistedUploadsList(),
 				),
 			);
 
@@ -304,8 +298,9 @@ class MassAction {
 				$formQuestion[] = array(
 					'label' => $langs->trans('MassActionSelectModelEmail'),
 					'type' => 'other',
-					'name' => 'modelEmail',
-					'value' => $form->selectModelMail("", 'supplier_proposal_send', 0, 0, ''),
+					'name' => 'model_mail',
+					// Keep the selected template when reloading the form (e.g., after adding attachments)
+					'value' => $form->selectModelMail('', 'supplier_proposal_send', 0, 0, $preselectedModel),
 				);
 			}
 			$useajax = 0; // File upload not compatible with ajax dialog
@@ -477,8 +472,10 @@ class MassAction {
 			$db->commit();
 			return $successLog;
 
-		} catch (Exception $e) {
-			$db->rollback();
+		} catch (Throwable $e) {
+			if (!empty($db->transaction_opened)) {
+				$db->rollback();
+			}
 			throw new Exception($langs->trans("MassActionErrorProcessingSupplier", $supplier->name) . ': ' . $e->getMessage());
 		}
 	}
