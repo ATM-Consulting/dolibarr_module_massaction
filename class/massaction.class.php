@@ -328,6 +328,8 @@ class MassAction {
 			$disableFormTag
 		);
 
+		// HACK: The core function formconfirm() does not support passing the 'enctype' attribute.
+		// We must inject it manually via regex to allow file uploads in this specific form.
 		if ($action === 'preSelectSupplierPrice' && strpos($formConfirm, 'enctype="multipart/form-data"') === false) {
 			$formConfirm = preg_replace('/<form([^>]*)method="POST"/i', '<form$1method="POST" enctype="multipart/form-data"', $formConfirm, 1);
 		}
@@ -868,18 +870,19 @@ class MassAction {
 
 		$documents = dol_dir_list($dir, 'files', 0, '', '', '', 'fullname', 1);
 		foreach ($documents as $document) {
-			if (empty($document['fullname']) || !is_file($document['fullname'])) {
+			$documentPath = $document['fullname'] ?? '';
+			if (empty($documentPath) || !is_file($documentPath)) {
 				continue;
 			}
-			$basename = basename($document['fullname']);
+			$basename = basename($documentPath);
 			if ($basename === 'index.html' || preg_match('/\.meta$/', $basename)) {
 				continue;
 			}
-			if (realpath($document['fullname']) === realpath($pdfPath)) {
+			if (realpath($documentPath) === realpath($pdfPath)) {
 				continue;
 			}
-			$extraPaths[] = $document['fullname'];
-			$extraMimeTypes[] = dol_mimetype($document['fullname']);
+			$extraPaths[] = $documentPath;
+			$extraMimeTypes[] = dol_mimetype($documentPath);
 			$extraBasenames[] = $basename;
 		}
 
