@@ -157,6 +157,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		$TContext = explode(":", $parameters['context']);
 		$confirm = GETPOST('confirm', 'alphanohtml');
+		$massActionToken = GETPOST('massaction_token', 'alphanohtml');
 
 		$error = 0; // Error counter
 		$errormsg = ''; // Error message
@@ -451,6 +452,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		if (!empty($commonContexts)) {
 			require_once __DIR__ . '/massaction.class.php';
+			if (empty($massActionToken)) {
+				$massActionToken = MassAction::getMassActionToken();
+			}
 
 			$langs->load('massaction@massaction');
 			$massAction = new MassAction($this->db, $object);
@@ -459,6 +463,10 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$TSelectedLines = explode(',', $selectedLines);
 
 			$confirm = GETPOST('confirm', 'alpha');
+
+			if ($action == 'preSelectSupplierPrice' && !$confirm && !GETPOST('sendit', 'alpha') && !GETPOST('remove_massaction_file', 'alpha')) {
+				MassAction::cleanupTemporaryUploads(array(), '', $massActionToken);
+			}
 
 			if ($action == 'delete_lines' && $confirm == 'yes') {
 				$TRowIds = array_column($object->lines, 'rowid');
@@ -519,10 +527,35 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			}
 			// Supplier price request management
+			if ($action == 'preSelectSupplierPrice' && GETPOST('sendit', 'alpha')) {
+				$uploadResult = MassAction::persistUploadedFiles($_FILES['massaction_files'] ?? array(), $massActionToken);
+				if (!empty($uploadResult['errors'])) {
+					setEventMessages($langs->trans('ErrorFileNotUploaded'), $uploadResult['errors'], 'errors');
+				} elseif (!empty($uploadResult['files'])) {
+					setEventMessage($langs->trans('FileTransmitted'));
+				}
+				$action = 'preSelectSupplierPrice';
+			} elseif ($action == 'preSelectSupplierPrice' && GETPOST('remove_massaction_file', 'alpha')) {
+				$fileToRemove = GETPOST('remove_massaction_file', 'alpha');
+				$resultRemove = MassAction::removePersistedUpload($fileToRemove, $massActionToken);
+				if ($resultRemove < 0) {
+					setEventMessage($langs->trans('ErrorFailedToDeleteFile', $fileToRemove), 'errors');
+				} else {
+					setEventMessage($langs->trans('FileDeleted'));
+				}
+				$action = 'preSelectSupplierPrice';
+			}
 			if ($action == 'createSupplierPrice') {
+				if ($confirm !== 'yes') {
+					MassAction::cleanupTemporaryUploads(array(), '', $massActionToken);
+					$action = '';
+					return 0;
+				}
+
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId);
+				// Attachments are already persisted during preSelectSupplierPrice
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, array(), $massActionToken);
 			}
 		}
 		return 0;
@@ -640,11 +673,10 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					var TSelectedLines = selectedLines.split(',');
 
 					var currentAction = "<?php echo $action ?>";
-
 					var toShow = formConfirm !== '' ? formConfirm : (massActionButton || '');
 
 					var form = `
-						<form method="post" id="searchFormList" action="` + action + `">
+						<form method="post" id="massactionForm" action="` + action + `">
 							<input type="hidden" name="token" value="` + token + `">
 							<input type="hidden" name="selectedLines" id="selectedLines" value="` + selectedLines + `">
 							<input type="hidden" name="action" value="">
@@ -657,6 +689,29 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$('#addproduct:last-child').before(form);
 
 					showCheckboxes();
+
+					if (currentAction === 'preSelectSupplierPrice') {
+						$('#massactionForm').attr('enctype', 'multipart/form-data');
+						$('.massaction-remove-file').on('click', function (e) {
+							e.preventDefault();
+							var fname = $(this).data('filename');
+							$('.removedfilehidden').val(fname);
+							$('input[name="action"]').val('preSelectSupplierPrice');
+							$('#confirm').val('no');
+							$('#massactionForm').submit();
+						});
+						$('.massaction-file-input').on('change', function () {
+							if ($(this).val()) {
+								$('input[name="action"]').val('preSelectSupplierPrice');
+								$('#confirm').val('no');
+								$('input[name="sendit"]').val('1');
+								$('#massactionForm').submit();
+							}
+						});
+						$('.confirmvalidatebutton').on('click', function () {
+							$('input[name="action"]').val('createSupplierPrice');
+						});
+					}
 
 					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
 					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {
@@ -857,5 +912,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 		return 0;
 	}
+
 
 }

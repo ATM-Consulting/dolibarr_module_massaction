@@ -106,6 +106,7 @@ MassActionCreateSupplierPrice = Create a price request
 MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier proposal for the %s line(s) ?
 MassActionSelectSupplier = Select suppliers :
 MassActionSelectModelEmail = Select email template :
+MassActionAddAttachments = Add attachments
 MassActionErrorFailedToSendMailTo = Failed to send the email to supplier %s
 MassActionSupplierPriceRequestCreatedFor = Price request created for supplier %s: %s
 
@@ -119,3 +120,6 @@ MassActionErrorCouldNotFindlineDetails = Unable to find line details
 MassActionFailedToCreateSupplierProposal = Failed to create supplier proposal :
 MassActionFailedToGeneratePDF =	Failed to generate PDF :
 MassActionFailedToSendEmail = Failed to send email :
+FileTransmitted=File transmitted
+FileDeleted=File deleted
+ErrorFailedToDeleteFile=Failed to delete file %s
