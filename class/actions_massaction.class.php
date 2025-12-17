@@ -157,6 +157,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		$TContext = explode(":", $parameters['context']);
 		$confirm = GETPOST('confirm', 'alphanohtml');
+		$massActionToken = GETPOST('massaction_token', 'alphanohtml');
 
 		$error = 0; // Error counter
 		$errormsg = ''; // Error message
@@ -451,6 +452,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		if (!empty($commonContexts)) {
 			require_once __DIR__ . '/massaction.class.php';
+			if (empty($massActionToken)) {
+				$massActionToken = MassAction::getMassActionToken();
+			}
 
 			$langs->load('massaction@massaction');
 			$massAction = new MassAction($this->db, $object);
@@ -461,7 +465,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$confirm = GETPOST('confirm', 'alpha');
 
 			if ($action == 'preSelectSupplierPrice' && !$confirm && !GETPOST('sendit', 'alpha') && !GETPOST('remove_massaction_file', 'alpha')) {
-				MassAction::cleanupTemporaryUploads();
+				MassAction::cleanupTemporaryUploads(array(), '', $massActionToken);
 			}
 
 			if ($action == 'delete_lines' && $confirm == 'yes') {
@@ -524,11 +528,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 			// Supplier price request management
 			if ($action == 'preSelectSupplierPrice' && GETPOST('sendit', 'alpha')) {
-				$uploadRequest = $this->extractUploadedFilesFromRequest('userfile');
-				if (!empty($uploadRequest['errors'])) {
-					setEventMessages($langs->trans('ErrorFileNotUploaded'), $uploadRequest['errors'], 'errors');
-				}
-				$uploadResult = MassAction::persistUploadedFiles($uploadRequest['files']);
+				$uploadResult = MassAction::persistUploadedFiles($_FILES['massaction_files'] ?? array(), $massActionToken);
 				if (!empty($uploadResult['errors'])) {
 					setEventMessages($langs->trans('ErrorFileNotUploaded'), $uploadResult['errors'], 'errors');
 				} elseif (!empty($uploadResult['files'])) {
@@ -537,7 +537,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$action = 'preSelectSupplierPrice';
 			} elseif ($action == 'preSelectSupplierPrice' && GETPOST('remove_massaction_file', 'alpha')) {
 				$fileToRemove = GETPOST('remove_massaction_file', 'alpha');
-				$resultRemove = MassAction::removePersistedUpload($fileToRemove);
+				$resultRemove = MassAction::removePersistedUpload($fileToRemove, $massActionToken);
 				if ($resultRemove < 0) {
 					setEventMessage($langs->trans('ErrorFailedToDeleteFile', $fileToRemove), 'errors');
 				} else {
@@ -547,18 +547,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 			if ($action == 'createSupplierPrice') {
 				if ($confirm !== 'yes') {
-					MassAction::cleanupTemporaryUploads();
+					MassAction::cleanupTemporaryUploads(array(), '', $massActionToken);
 					$action = '';
 					return 0;
 				}
 
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
-				$uploadedFilesData = $this->extractUploadedFilesFromRequest('massaction_files');
-				if (!empty($uploadedFilesData['errors'])) {
-					setEventMessages($langs->trans('ErrorFileNotUploaded'), $uploadedFilesData['errors'], 'errors');
-				}
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, $uploadedFilesData['files']);
+				// Attachments are already persisted during preSelectSupplierPrice
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, array(), $massActionToken);
 			}
 		}
 		return 0;
@@ -679,7 +676,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					var toShow = formConfirm !== '' ? formConfirm : (massActionButton || '');
 
 					var form = `
-						<form method="post" id="searchFormList" action="` + action + `">
+						<form method="post" id="massactionForm" action="` + action + `">
 							<input type="hidden" name="token" value="` + token + `">
 							<input type="hidden" name="selectedLines" id="selectedLines" value="` + selectedLines + `">
 							<input type="hidden" name="action" value="">
@@ -694,21 +691,21 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					showCheckboxes();
 
 					if (currentAction === 'preSelectSupplierPrice') {
-						$('#searchFormList').attr('enctype', 'multipart/form-data');
+						$('#massactionForm').attr('enctype', 'multipart/form-data');
 						$('.massaction-remove-file').on('click', function (e) {
 							e.preventDefault();
 							var fname = $(this).data('filename');
 							$('.removedfilehidden').val(fname);
 							$('input[name="action"]').val('preSelectSupplierPrice');
 							$('#confirm').val('no');
-							$('#searchFormList').submit();
+							$('#massactionForm').submit();
 						});
 						$('.massaction-file-input').on('change', function () {
 							if ($(this).val()) {
 								$('input[name="action"]').val('preSelectSupplierPrice');
 								$('#confirm').val('no');
 								$('input[name="sendit"]').val('1');
-								$('#searchFormList').submit();
+								$('#massactionForm').submit();
 							}
 						});
 						$('.confirmvalidatebutton').on('click', function () {
@@ -916,92 +913,5 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		return 0;
 	}
 
-
-	/**
-	 * @param string $inputName
-	 * @return array{files: array<int, array{name:string,tmp_name:string,type?:string,size?:int,error?:int}>, errors: array<int, string>}
-	 */
-	private function extractUploadedFilesFromRequest(string $inputName): array
-	{
-		global $langs;
-
-		$normalized = array('files' => array(), 'errors' => array());
-
-		if (empty($_FILES[$inputName])) {
-			return $normalized;
-		}
-
-		$fileInput = $_FILES[$inputName];
-		$names = $fileInput['name'];
-		$tmpNames = $fileInput['tmp_name'];
-		$types = $fileInput['type'];
-		$sizes = $fileInput['size'];
-		$errors = $fileInput['error'];
-
-		$isArray = is_array($names);
-		$total = $isArray ? count($names) : 1;
-
-		for ($i = 0; $i < $total; $i++) {
-			$name = $isArray ? $names[$i] : $names;
-			$tmpName = $isArray ? $tmpNames[$i] : $tmpNames;
-			$type = $isArray ? $types[$i] : $types;
-			$size = $isArray ? $sizes[$i] : $sizes;
-			$error = $isArray ? $errors[$i] : $errors;
-
-			if ($error === UPLOAD_ERR_NO_FILE || (empty($name) && empty($tmpName))) {
-				continue;
-			}
-
-			if ($error !== UPLOAD_ERR_OK || empty($tmpName)) {
-				$normalized['errors'][] = $this->buildUploadErrorMessage($name, $error);
-				continue;
-			}
-
-			$normalized['files'][] = array(
-				'name' => $name,
-				'tmp_name' => $tmpName,
-				'type' => $type,
-				'size' => $size,
-				'error' => $error,
-			);
-		}
-
-		return $normalized;
-	}
-
-	/**
-	 * @param string $name
-	 * @param int $errorCode
-	 * @return string
-	 */
-	private function buildUploadErrorMessage(string $name, int $errorCode): string
-	{
-		global $langs;
-
-		switch ($errorCode) {
-			case UPLOAD_ERR_INI_SIZE:
-			case UPLOAD_ERR_FORM_SIZE:
-				$errorLabel = $langs->trans('ErrorFileSizeTooLarge');
-				break;
-			case UPLOAD_ERR_PARTIAL:
-				$errorLabel = $langs->trans('ErrorPartialFile');
-				break;
-			case UPLOAD_ERR_NO_TMP_DIR:
-				$errorLabel = $langs->trans('ErrorNoTmpDir');
-				break;
-			case UPLOAD_ERR_CANT_WRITE:
-				$errorLabel = $langs->trans('ErrorFailedToWriteInDir', '');
-				break;
-			case UPLOAD_ERR_EXTENSION:
-				$errorLabel = $langs->trans('ErrorUploadBlockedByAddon');
-				break;
-			default:
-				$errorLabel = $langs->trans('ErrorFileNotUploaded');
-		}
-
-		$fileLabel = !empty($name) ? $name : $langs->trans('File');
-
-		return $fileLabel . ' - ' . $errorLabel;
-	}
 
 }
