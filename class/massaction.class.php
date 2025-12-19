@@ -590,6 +590,11 @@ class MassAction {
 			$copyResult = dol_copy($tmpName, $destination, '0', 0, 1);
 			if ($copyResult <= 0) {
 				$errors[] = self::formatUploadErrorMessage($originalName, $copyResult);
+			} else {
+				$indexResult = addFileIntoDatabaseIndex($targetDir, basename($destination), $originalName, 'uploaded', 1, $proposal);
+				if ($indexResult < 0) {
+					$errors[] = $langs->trans('WarningFailedToAddFileIntoDatabaseIndex');
+				}
 			}
 		}
 
