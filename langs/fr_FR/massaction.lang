@@ -120,6 +120,7 @@ BackToModuleList = Retour liste
 MassActionCreateSupplierPrice = Créer une demande de prix
 MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la demande de prix fournisseur pour les %s lignes ?
 MassActionSelectSupplier = Sélectionnez les fournisseurs :
+MassActionMaxResponseDate = Date maximale de réponse :
 MassActionSelectModelEmail = Sélectionner le modèle de mail :
 MassActionAddAttachments = Ajouter des pièces jointes
 MassActionErrorFailedToSendMailTo = Impossible d'envoyer le mail pour le fournisseur %s

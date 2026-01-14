@@ -105,6 +105,7 @@ MassActionCreateSupplierPriceTitle = Create a price request
 MassActionCreateSupplierPrice = Create a price request
 MassActionConfirmcreateSupplierPrice = Are you sure you want to generate the supplier proposal for the %s line(s) ?
 MassActionSelectSupplier = Select suppliers :
+MassActionMaxResponseDate = Max response date :
 MassActionSelectModelEmail = Select email template :
 MassActionAddAttachments = Add attachments
 MassActionErrorFailedToSendMailTo = Failed to send the email to supplier %s
