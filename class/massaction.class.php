@@ -468,7 +468,7 @@ class MassAction {
 	 * @return array                            An array of success messages.
 	 * @throws Exception                        If an error occurs during the process.
 	 */
-	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object, $deliveryDate = null, array $uploadedFiles = []): array
+	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object, ?int $deliveryDate = null, array $uploadedFiles = []): array
 	{
 		global $db, $langs;
 
