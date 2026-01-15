@@ -554,8 +554,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				$supplierIds = GETPOST('supplierid', 'array');
 				$templateId = GETPOST('model_mail', 'int');
+				$deliveryDate = null;
+				if (GETPOSTINT('maxresponse_year')) {
+					$deliveryDate = dol_mktime(12, 0, 0, GETPOSTINT('maxresponse_month'), GETPOSTINT('maxresponse_day'), GETPOSTINT('maxresponse_year'));
+				}
 				// Attachments are already persisted during preSelectSupplierPrice
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, array(), $massActionToken);
+				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, $deliveryDate, array(), $massActionToken);
 			}
 		}
 		return 0;
