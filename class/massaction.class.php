@@ -287,7 +287,7 @@ class MassAction {
 					'value' => $form->select_company($preselectedSuppliers, 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
 				),
 				array(
-					'label' => $langs->trans('MassActionMaxResponseDate'),
+					'label' => $langs->trans('SupplierProposalDate'),
 					'type' => 'other',
 					'name' => 'maxresponse_',
 					'value' => $form->selectDate($preselectedDeliveryDate, 'maxresponse_', 0, 0, 0, '', 1, 1),
