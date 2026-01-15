@@ -392,7 +392,7 @@ class MassAction {
 	 * @param array $uploadedFiles The uploaded files to attach to the proposal
 	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId, $deliveryDate = null, array $uploadedFiles = [], string $token = ''): void
+	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId, ?int $deliveryDate = null, array $uploadedFiles = [], string $token = ''): void
 	{
 		global $db, $user, $langs, $conf;
 
