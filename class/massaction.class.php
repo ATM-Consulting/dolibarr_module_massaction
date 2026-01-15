@@ -524,7 +524,7 @@ class MassAction {
 	 * * @return SupplierProposal The created supplier proposal request.
 	 * * @throws Exception if creation fails.
  */
-	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object, $deliveryDate = null, array $uploadedFiles = []): SupplierProposal
+	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object, ?int $deliveryDate = null, array $uploadedFiles = []): SupplierProposal
 	{
 		global $db, $user, $langs;
 
