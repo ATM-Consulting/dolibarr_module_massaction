@@ -275,12 +275,22 @@ class MassAction {
 			$question = $langs->trans('MassActionConfirmcreateSupplierPrice', $nbrOfSelectedLines);
 			$preselectedSuppliers = GETPOST('supplierid', 'array');
 			$preselectedModel = GETPOST('model_mail', 'int');
+			$preselectedDeliveryDate = dol_mktime(12, 0, 0, GETPOSTINT('maxresponse_month'), GETPOSTINT('maxresponse_day'), GETPOSTINT('maxresponse_year'));
+			if (empty($preselectedDeliveryDate)) {
+				$preselectedDeliveryDate = -1;
+			}
 			$formQuestion = array(
 				array(
 					'label' => $langs->trans('MassActionSelectSupplier'),
 					'type' => 'other',
 					'name' => 'supplierPrice',
 					'value' => $form->select_company($preselectedSuppliers, 'supplierid', '(s.fournisseur:IN:' . SOCIETE::SUPPLIER .')' , 1, 1, 0, [], 0, 'minwidth100', '', '', 1, [], true),
+				),
+				array(
+					'label' => $langs->trans('SupplierProposalDate'),
+					'type' => 'other',
+					'name' => 'maxresponse_',
+					'value' => $form->selectDate($preselectedDeliveryDate, 'maxresponse_', 0, 0, 0, '', 1, 1),
 				),
 				array(
 					'label' => $langs->trans('AttachedFiles'),
@@ -378,10 +388,11 @@ class MassAction {
 	 * @param array $TSelectedLines The lines to process.
 	 * @param array $supplierIds The supplier to send the supplier proposal
 	 * @param int $templateId The email template to use for sending the supplier proposal
+	 * @param int|null $deliveryDate Delivery date to set on the supplier proposal
 	 * @param array $uploadedFiles The uploaded files to attach to the proposal
 	 * * @return void                This function does not return a value but outputs messages.
 	 */
-	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId, array $uploadedFiles = [], string $token = ''): void
+	public static function handleCreateSupplierPriceAction(CommonObject $object, array $TSelectedLines, array $supplierIds, int $templateId, ?int $deliveryDate = null, array $uploadedFiles = [], string $token = ''): void
 	{
 		global $db, $user, $langs, $conf;
 
@@ -425,7 +436,7 @@ class MassAction {
 		try {
 			foreach ($supplierIds as $supplierId) {
 				try {
-					$resultMessages = self::processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object, $preparedUploads['files']);
+					$resultMessages = self::processSingleSupplier($supplierId, $selectedLinesDetails, $templateId, $object, $deliveryDate, $preparedUploads['files']);
 					$successMessages = array_merge($successMessages, $resultMessages);
 				} catch (Exception $e) {
 					$errorMessages[] = $e->getMessage();
@@ -452,11 +463,12 @@ class MassAction {
 	 * @param array $selectedLinesDetails         An array of selected line details.
 	 * @param int $templateId                    The ID of the email template to use for sending the supplier proposal.
 	 * @param CommonObject $object              The original source object (e.g., Order, Proposal).
+	 * @param int|null $deliveryDate            Delivery date to set on the supplier proposal.
 	 * @param array $uploadedFiles              Uploaded files coming from the confirmation form.
 	 * @return array                            An array of success messages.
 	 * @throws Exception                        If an error occurs during the process.
 	 */
-	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object, array $uploadedFiles = []): array
+	public static function processSingleSupplier(int $supplierId, array $selectedLinesDetails, int $templateId, CommonObject $object, ?int $deliveryDate = null, array $uploadedFiles = []): array
 	{
 		global $db, $langs;
 
@@ -467,7 +479,7 @@ class MassAction {
 		$db->begin();
 
 		try {
-			$supplierProposal = self::createSupplierProposal($supplierId, $selectedLinesDetails, $object, $uploadedFiles);
+			$supplierProposal = self::createSupplierProposal($supplierId, $selectedLinesDetails, $object, $deliveryDate, $uploadedFiles);
 			$successLog[] = $langs->trans("MassActionSupplierPriceRequestCreatedFor", $supplier->name, $supplierProposal->getNomUrl(1, '', '', 1));
 
 			self::generateProposalPdf($supplierProposal);
@@ -507,17 +519,21 @@ class MassAction {
 	 * * @param int $supplierId Id of the supplier
 	 * * @param array $lines Array of lines to process
 	 * * @param CommonObject $object The original source object (e.g., Order, Proposal)
+	 * * @param int|null $deliveryDate Delivery date to set on the supplier proposal
 	 * * @param array $uploadedFiles Files uploaded from confirmation form
 	 * * @return SupplierProposal The created supplier proposal request.
 	 * * @throws Exception if creation fails.
  */
-	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object, array $uploadedFiles = []): SupplierProposal
+	public static function createSupplierProposal(int $supplierId, array $lines, CommonObject $object, ?int $deliveryDate = null, array $uploadedFiles = []): SupplierProposal
 	{
 		global $db, $user, $langs;
 
 		$supplierProposal = new SupplierProposal($db);
 		$supplierProposal->socid = $supplierId;
 		$supplierProposal->date_creation = dol_now();
+		if (!empty($deliveryDate)) {
+			$supplierProposal->delivery_date = $deliveryDate;
+		}
 		$supplierProposal->origin_type = $object->element;
 		$supplierProposal->origin_id = $object->id;
 		if (!empty($object->fk_project)) {
