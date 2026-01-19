@@ -102,6 +102,7 @@ $predefinedPrice = getDolGlobalInt('SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONL
 setup_print_on_off('MASSACTION_AUTO_DOWNLOAD', $langs->trans('SetupAutoDownloadTitle') , $langs->trans('SetupAutoDownloadDesc'));
 setup_print_on_off('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL', $langs->trans('MassActionSetupAutoSendSupplierProposal'), $predefinedPrice);
 setup_print_on_off('MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO', $langs->trans('MassActionSetupCreateProposalSupplierToZero'));
+setup_print_on_off('MASSACTION_COPY_REFCLIENT_TO_SUPPLIERPROPOSAL', $langs->trans('MassActionSetupCopyRefClientToSupplierProposal'), $langs->trans('MassActionSetupCopyRefClientToSupplierProposalDesc'));
 print '</table>';
 dol_fiche_end(-1);
 llxFooter();

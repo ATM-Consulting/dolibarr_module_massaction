@@ -1,6 +1,7 @@
 # Changelog for massaction
 
 ## Unreleased
+- NEW : ST-5 - copy customer reference to supplier proposal when creating from propal/order (configurable) - *19/01/2026* - 1.8.0
 
 ## Release 1.7
 - FIX : ST-5 - add field Maximum response date on supplier proposal massaction - *20/12/2025* - 1.7.4
