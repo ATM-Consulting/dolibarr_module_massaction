@@ -506,6 +506,41 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	}
 
 	/**
+	 * Normalize selected line IDs from array input.
+	 *
+	 * @param array<int|string> $selectedLines
+	 * @return int[]
+	 */
+	private function getSelectedLineIdsFromArray(array $selectedLines): array
+	{
+		$ids = array_filter(
+			array_map('intval', $selectedLines),
+			static function (int $value): bool {
+				return $value > 0;
+			}
+		);
+
+		return array_values($ids);
+	}
+
+	/**
+	 * Ensure the BOM object is loaded when actions run from popins.
+	 *
+	 * @param CommonObject $object
+	 * @return void
+	 */
+	private function ensureBomLoaded(CommonObject $object): void
+	{
+		$bomId = (int) ($object->id ?? 0);
+		if ($bomId <= 0) {
+			$bomId = GETPOSTINT('id');
+		}
+		if ($bomId > 0 && method_exists($object, 'fetch')) {
+			$object->fetch($bomId);
+		}
+	}
+
+	/**
 	 * Check if current user can delete BOM lines.
 	 *
 	 * @param CommonObject $object
@@ -590,62 +625,74 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param CommonObject $object
 	 * @param MassAction $massAction
 	 * @param int[] $selectedLineIds
-	 * @return void
+	 * @return array{deletedIds:int[],skippedIds:int[]}
 	 */
-	private function deleteBomLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
+	private function deleteBomLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): array
 	{
 		global $user, $langs;
-
 		if (empty($selectedLineIds)) {
-			return;
+			return array('deletedIds' => array(), 'skippedIds' => array());
 		}
 
 		$object->fetchLines();
 		$linesById = array();
 		$lineIndexMap = array();
 		foreach ($object->lines as $line) {
-			if (isset($line->rowid)) {
+			$rowid = 0;
+			if (isset($line->id)) {
+				$rowid = (int) $line->id;
+			} elseif (isset($line->rowid)) {
 				$rowid = (int) $line->rowid;
+			}
+			if ($rowid > 0) {
 				$linesById[$rowid] = $line;
-				$lineIndexMap[$rowid] = (int) $line->position;
+				$lineIndexMap[$rowid] = isset($line->position) ? (int) $line->position : 0;
 			}
 		}
 
 		$deletableIds = array();
+		$skippedIds = array();
 		foreach ($selectedLineIds as $selectedLine) {
 			$selectedLine = (int) $selectedLine;
 			if (empty($linesById[$selectedLine])) {
 				continue;
 			}
 			if (!empty($linesById[$selectedLine]->fk_prev_id)) {
+				$skippedIds[] = $selectedLine;
 				continue;
 			}
 			$deletableIds[] = $selectedLine;
 		}
 
 		if (empty($deletableIds)) {
-			return;
+			return array('deletedIds' => array(), 'skippedIds' => $skippedIds);
 		}
 
 		$this->db->begin();
 
+		$deletedIds = array();
 		foreach ($deletableIds as $selectedLine) {
 			$index = isset($lineIndexMap[$selectedLine]) ? $lineIndexMap[$selectedLine] : 0;
 			$line = $linesById[$selectedLine];
 			$result = $massAction->deleteLine((int) $index, (int) $selectedLine, false, $line);
 			if ($result < 0) {
+				if ($debugMassAction) {
+					var_dump('bom_delete_failed', $selectedLine, $massAction->TErrors);
+				}
 				$this->db->rollback();
-				return;
+				return array('deletedIds' => array(), 'skippedIds' => $skippedIds);
 			}
+			$deletedIds[] = $selectedLine;
 		}
 
 		$object->fetchLines();
 		if ($this->reorderBomLinePositions($object, $user, $massAction) < 0) {
 			$this->db->rollback();
-			return;
+			return array('deletedIds' => array(), 'skippedIds' => $skippedIds);
 		}
 		$object->calculateCosts();
 		$this->db->commit();
+		return array('deletedIds' => $deletedIds, 'skippedIds' => $skippedIds);
 	}
 
 
@@ -680,6 +727,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$selectedLineIds = $this->getSelectedLineIds($selectedLines);
+			if (empty($selectedLineIds)) {
+				$selectedLineIds = $this->getSelectedLineIdsFromArray(GETPOST('toselect', 'array'));
+			}
 
 			$confirm = GETPOST('confirm', 'alpha');
 
@@ -691,6 +741,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$redirectUrl = '';
 
 				if ($object->element === 'bom') {
+					$this->ensureBomLoaded($object);
 					if (!$this->canDeleteBom($object, $user)) {
 						setEventMessage($langs->trans("ErrorDeleteLineNotAllowedByObjectStatus"), 'errors');
 						$action = '';
@@ -698,8 +749,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					}
 
 					$redirectUrl = $this->getBomRedirectUrl();
-					$this->deleteBomLines($object, $massAction, $selectedLineIds);
+					$deleteResult = $this->deleteBomLines($object, $massAction, $selectedLineIds);
+					$selectedLineIds = $deleteResult['deletedIds'];
 				} else {
+					if ($debugMassAction) {
+						var_dump('delete_standard', $selectedLineIds);
+					}
 					$this->deleteStandardLines($object, $massAction, $selectedLineIds);
 				}
 
