@@ -1,6 +1,7 @@
 # Changelog for massaction
 
 ## Unreleased
+- NEW : TK2601-4045 - Add support for mass actions on BOM (Bill of Materials) objects - *20/01/2026* - 1.8.0
 
 ## Release 1.7
 - FIX : ST-5 - add field Maximum response date on supplier proposal massaction - *20/12/2025* - 1.7.4
