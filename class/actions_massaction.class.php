@@ -69,7 +69,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$this->db = $db;
 	}
 
-public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
+	public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $user, $massaction, $langs;
 
@@ -151,7 +151,7 @@ public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
 	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
 	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
 	 */
-public function doMassActions($parameters, &$object, &$action, $hookmanager)
+	public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
 		$langs->load('massaction@massaction');
@@ -523,14 +523,14 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	 * @param CommonObject $object
 	 * @param User $user
 	 * @param MassAction $massAction
-	 * @return void
+	 * @return int <0 if error, 0 if ok
 	 */
-	private function reorderBomLinePositions(CommonObject $object, User $user, MassAction $massAction): void
+	private function reorderBomLinePositions(CommonObject $object, User $user, MassAction $massAction): int
 	{
 		global $langs;
 
 		if (empty($object->lines)) {
-			return;
+			return 0;
 		}
 
 		usort($object->lines, static function ($left, $right): int {
@@ -546,12 +546,13 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 			if ((int) $line->position !== $nextPosition) {
 				$line->position = $nextPosition;
 				if ($line->update($user) < 0) {
-				$massAction->TErrors[] = $langs->trans('ErrorUpdateLine', $line->position);
-					return;
+					$massAction->TErrors[] = $langs->trans('ErrorUpdateLine', $line->position);
+					return -1;
 				}
 			}
 			$nextPosition++;
 		}
+		return 0;
 	}
 
 	/**
@@ -601,9 +602,12 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 		$object->fetchLines();
 		$linesById = array();
+		$lineIndexMap = array();
 		foreach ($object->lines as $line) {
 			if (isset($line->rowid)) {
-				$linesById[(int) $line->rowid] = $line;
+				$rowid = (int) $line->rowid;
+				$linesById[$rowid] = $line;
+				$lineIndexMap[$rowid] = (int) $line->position;
 			}
 		}
 
@@ -626,17 +630,17 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 		$this->db->begin();
 
 		foreach ($deletableIds as $selectedLine) {
+			$index = isset($lineIndexMap[$selectedLine]) ? $lineIndexMap[$selectedLine] : 0;
 			$line = $linesById[$selectedLine];
-			if ($line->delete($user) < 0) {
-				$massAction->TErrors[] = $langs->trans('ErrorDeleteLine', $selectedLine);
+			$result = $massAction->deleteLine((int) $index, (int) $selectedLine, false, $line);
+			if ($result < 0) {
 				$this->db->rollback();
 				return;
 			}
 		}
 
 		$object->fetchLines();
-		$this->reorderBomLinePositions($object, $user, $massAction);
-		if (!empty($massAction->TErrors)) {
+		if ($this->reorderBomLinePositions($object, $user, $massAction) < 0) {
 			$this->db->rollback();
 			return;
 		}
@@ -841,247 +845,28 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form, $this->getFormConfirmPage($object, $id));
 
+			$massActionConfig = array(
+				'actionUrl' => $this->getActionUrl($object, $id),
+				'token' => newToken(),
+				'selectedLines' => $selectedLines,
+				'currentAction' => $action,
+				'massActionButton' => $massActionButton,
+				'formConfirm' => $formConfirm,
+				'enableCheckboxes' => (int) $enableCheckboxes,
+				'isBomContext' => in_array('bomcard', $TContexts),
+				'emptySelectionMessage' => $langs->trans('EmptyTMoveLine'),
+				'labels' => array(
+					'selectAll' => $langs->transnoentities('SelectAll'),
+					'products' => $langs->transnoentities('BOMProductsList'),
+					'services' => $langs->transnoentities('BOMServicesList'),
+				),
+			);
 			?>
 
 			<script type="text/javascript">
-
-				var massActionButton = <?php echo json_encode($massActionButton); ?>;
-
-				var enableCheckboxes = <?php echo $enableCheckboxes; ?>;
-
-				var formConfirm = <?php echo json_encode($formConfirm) ?>;
-
-				var isBomContext = <?php echo in_array('bomcard', $TContexts) ? 'true' : 'false'; ?>;
-				var emptySelectionMessage = <?php echo json_encode($langs->trans('EmptyTMoveLine')); ?>;
-				// Keep selectors centralized to keep checkbox syncing reliable.
-				var checkboxSelectors = {
-					global: '#massaction-checkall',
-					products: '#massaction-checkall-products',
-					services: '#massaction-checkall-services'
-				};
-
-				// Append a header cell that matches Dolibarr's table header structure.
-				function appendHeaderCell(tableSelector, headerHtml) {
-					var header = $(tableSelector + ' .liste_titre');
-					if (!header.length || header.find('.massaction-header').length) {
-						return;
-					}
-
-					header.append('<td class="center massaction-header liste_titre">' + (headerHtml || '') + '</td>');
-				}
-
-				// Add checkboxes to a table and return how many selectable rows were found.
-				function addCheckboxesToTable(tableSelector, headerHtml) {
-					var count = 0;
-
-					$(tableSelector + ' tbody tr').each(function () {
-						var rowId = $(this).attr('id');
-						if (rowId && rowId.startsWith("row-")) {
-							count++;
-							var dataId = $(this).data('id');
-							if (!$(this).find('.checkforselect').length) {
-								$(this).append('<td class="nowrap" align="center"><input id="cb' + dataId + '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' + dataId + '"></td>');
-							}
-						} else if (!$(this).find('td:first').is('[colspan="100%"]')) {
-							$(this).append('<td></td>');
-						}
-					});
-
-					if (count > 0) {
-						appendHeaderCell(tableSelector, headerHtml);
-					}
-
-					return count;
-				}
-
-				// Inject checkboxes and table-level selectors depending on context.
-				function showCheckboxes() {
-					if (enableCheckboxes) {
-						if (isBomContext) {
-							var productHeader = `
-								<div class="checkallactions massaction-checkall-line" style="display:block;">
-									<input type="checkbox" id="massaction-checkall" name="checkforselects" class="checkallactions" title="<?php echo $langs->transnoentities('SelectAll'); ?>">
-								</div>
-								<div class="checkallactions massaction-checkall-line" style="display:block;">
-									<input type="checkbox" id="massaction-checkall-products" name="checkforselects_products" class="checkallactions" title="<?php echo $langs->transnoentities('BOMProductsList'); ?>">
-								</div>
-							`;
-							var serviceHeader = `
-								<div class="checkallactions massaction-checkall-line" style="display:block;">
-									<input type="checkbox" id="massaction-checkall-services" name="checkforselects_services" class="checkallactions" title="<?php echo $langs->transnoentities('BOMServicesList'); ?>">
-								</div>
-							`;
-							addCheckboxesToTable('#tablelines', productHeader);
-							addCheckboxesToTable('#tablelinesservice', serviceHeader);
-						} else {
-							var defaultHeader = `
-								<div class="checkallactions massaction-checkall-line" style="display:block;">
-									<input type="checkbox" id="massaction-checkall" name="checkforselects" class="checkallactions">
-								</div>
-							`;
-							addCheckboxesToTable('#tablelines', defaultHeader);
-						}
-					}
-				}
-
-				// Keep header toggles consistent with actual line selection and table availability.
-				function syncCheckAllState() {
-					if (!isBomContext) {
-						return;
-					}
-
-					var productBoxes = $('#tablelines .checkforselect');
-					var serviceBoxes = $('#tablelinesservice .checkforselect');
-					var hasProducts = productBoxes.length > 0;
-					var hasServices = serviceBoxes.length > 0;
-
-					var allProductChecked = hasProducts && productBoxes.filter(':checked').length === productBoxes.length;
-					var allServiceChecked = hasServices && serviceBoxes.filter(':checked').length === serviceBoxes.length;
-
-					$(checkboxSelectors.products).prop('checked', allProductChecked).prop('disabled', !hasProducts);
-					$(checkboxSelectors.services).prop('checked', allServiceChecked).prop('disabled', !hasServices);
-					$(checkboxSelectors.global).prop('checked', hasProducts && hasServices && allProductChecked && allServiceChecked)
-						.prop('disabled', !hasProducts && !hasServices);
-				}
-
-				// Cette fonction met à jour l'input hidden selectedLines pour ajouter les lignes sélectionnées séparées par virgules
-				function updateSelectedLines() {
-					var TSelectedLines = [];
-					$('.checkforselect:checked').each(function () {
-						TSelectedLines.push($(this).val());
-					})
-					$('#selectedLines').val(TSelectedLines.join(','));
-				}
-
-				$(document).ready(function () {
-
-					// Reset toutes les checkbox
-					$('input[type="checkbox"].checkforselect').prop('checked', false);
-
-					var action = "<?php echo htmlspecialchars($this->getActionUrl($object, $id), ENT_QUOTES, 'UTF-8'); ?>";
-
-					var token = "<?php echo newToken() ?>";
-
-					var selectedLines = "<?php echo $selectedLines ?>";
-					var TSelectedLines = selectedLines.split(',');
-
-					var currentAction = "<?php echo $action ?>";
-					var toShow = formConfirm !== '' ? formConfirm : (massActionButton || '');
-
-					var form = `
-						<form method="post" id="massactionForm" action="` + action + `">
-							<input type="hidden" name="token" value="` + token + `">
-							<input type="hidden" name="selectedLines" id="selectedLines" value="` + selectedLines + `">
-							<input type="hidden" name="action" value="">
-
-							` + toShow + `
-
-						</form>
-					`;
-
-					var formTarget = $('#addproduct:last-child');
-					if (!formTarget.length) {
-						formTarget = $('#listbomproducts');
-					}
-					if (!formTarget.length) {
-						formTarget = $('#listbomservices');
-					}
-					formTarget.before(form);
-
-					showCheckboxes();
-					syncCheckAllState();
-
-					if (currentAction === 'preSelectSupplierPrice') {
-						$('#massactionForm').attr('enctype', 'multipart/form-data');
-						$('.massaction-remove-file').on('click', function (e) {
-							e.preventDefault();
-							var fname = $(this).data('filename');
-							$('.removedfilehidden').val(fname);
-							$('input[name="action"]').val('preSelectSupplierPrice');
-							$('#confirm').val('no');
-							$('#massactionForm').submit();
-						});
-						$('.massaction-file-input').on('change', function () {
-							if ($(this).val()) {
-								$('input[name="action"]').val('preSelectSupplierPrice');
-								$('#confirm').val('no');
-								$('input[name="sendit"]').val('1');
-								$('#massactionForm').submit();
-							}
-						});
-						$('.confirmvalidatebutton').on('click', function () {
-							$('input[name="action"]').val('createSupplierPrice');
-						});
-					}
-
-					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
-					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {
-						$(".checkforselect").each(function () {
-							var checkboxValue = $(this).val();
-							if (TSelectedLines.includes(checkboxValue)) {
-								$(this).prop('checked', true);
-							}
-						});
-						updateSelectedLines();  // Mettre à jour les lignes sélectionnées
-						syncCheckAllState();
-					}
-
-					// Sélection de toutes les lignes si checkforselects est checked
-					// Global toggle applies to both tables in BOM context.
-					$(document).on('click', checkboxSelectors.global, function () {
-						var checked = $(this).is(':checked');
-						$(".checkforselect").prop('checked', checked).trigger('change');
-						$(checkboxSelectors.products).prop('checked', checked);
-						$(checkboxSelectors.services).prop('checked', checked);
-						if (typeof initCheckForSelect == 'function') {
-							initCheckForSelect(0, "massaction", "checkforselect")
-						}
-					});
-
-					// Product/service toggles apply to their own table only.
-					$(document).on('click', checkboxSelectors.products, function () {
-						var checked = $(this).is(':checked');
-						$('#tablelines .checkforselect').prop('checked', checked).trigger('change');
-						if (!checked) {
-							$(checkboxSelectors.global).prop('checked', false);
-						}
-						if (typeof initCheckForSelect == 'function') {
-							initCheckForSelect(0, "massaction", "checkforselect")
-						}
-					});
-
-					$(document).on('click', checkboxSelectors.services, function () {
-						var checked = $(this).is(':checked');
-						$('#tablelinesservice .checkforselect').prop('checked', checked).trigger('change');
-						if (!checked) {
-							$(checkboxSelectors.global).prop('checked', false);
-						}
-						if (typeof initCheckForSelect == 'function') {
-							initCheckForSelect(0, "massaction", "checkforselect")
-						}
-					});
-
-					// Highlight des lignes sélectionnées
-					$('.checkforselect').change(function () {
-						$(this).closest('tr').toggleClass('highlight', this.checked);
-						updateSelectedLines();
-						if (isBomContext) {
-							// Keep table-level and global selectors aligned with current selection.
-							syncCheckAllState();
-						}
-					});
-
-					$(".massactionselect").change(function () {
-						var massaction = $(this).val();
-						if (massaction && $('.checkforselect:checked').length === 0) {
-							alert(emptySelectionMessage);
-							$(this).val('');
-							return;
-						}
-						$('input[name="action"]').val(massaction);
-					});
-				})
+				window.massactionConfig = <?php echo json_encode($massActionConfig); ?>;
 			</script>
+			<script type="text/javascript" src="<?php echo dol_buildpath('/massaction/js/massaction_bom.js', 1); ?>"></script>
 
 			<?php
 

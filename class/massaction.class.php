@@ -107,23 +107,31 @@ class MassAction {
 	/**
 	 * @param int $index
 	 * @param int $selectedLine
+	 * @param bool $useTransaction
+	 * @param BOMLine|null $line
 	 * @return int
 	 */
-	public function deleteLine(int $index, int $selectedLine): int
+	public function deleteLine(int $index, int $selectedLine, bool $useTransaction = true, ?BOMLine $line = null): int
 	{
 		global $user, $langs;
 
 		switch ($this->object->element) {
 			case "bom":
-				$line = new BOMLine($this->db);
-				$fetchResult = $line->fetch($selectedLine);
-				if ($fetchResult <= 0) {
-					return 1;
+				if ($line === null) {
+					$line = new BOMLine($this->db);
+					$fetchResult = $line->fetch($selectedLine);
+					if ($fetchResult <= 0) {
+						return 1;
+					}
 				}
 				if (!empty($line->fk_prev_id)) {
 					return 1;
 				}
-				$resDelete = $this->object->deleteLine($user, $selectedLine);
+				if ($useTransaction) {
+					$resDelete = $this->object->deleteLine($user, $selectedLine);
+				} else {
+					$resDelete = $line->delete($user);
+				}
 				break;
 			case "commande":
 				$resDelete = $this->object->deleteline($user, $selectedLine);
