@@ -439,6 +439,10 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 	/**
 	 * Build the action URL, keeping popin parameters for BOM context.
+	 *
+	 * @param CommonObject $object Current business object.
+	 * @param int $id Object id used in standard cards.
+	 * @return string
 	 */
 	private function getActionUrl(CommonObject $object, int $id): string
 	{
@@ -455,6 +459,10 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 	/**
 	 * Build the confirmation form action URL.
+	 *
+	 * @param CommonObject $object Current business object.
+	 * @param int $id Object id used in standard cards.
+	 * @return string
 	 */
 	private function getFormConfirmPage(CommonObject $object, int $id): string
 	{
@@ -463,6 +471,8 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 	/**
 	 * Build the redirect URL to keep popin context after BOM actions.
+	 *
+	 * @return string
 	 */
 	private function getBomRedirectUrl(): string
 	{
@@ -476,10 +486,15 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	/**
 	 * Normalize selected line IDs from CSV input.
 	 *
+	 * @param string $selectedLines
 	 * @return int[]
 	 */
 	private function getSelectedLineIds(string $selectedLines): array
 	{
+		if (trim($selectedLines) === '') {
+			return array();
+		}
+
 		$ids = array_filter(
 			array_map('intval', explode(',', $selectedLines)),
 			static function (int $value): bool {
@@ -492,6 +507,10 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 
 	/**
 	 * Check if current user can delete BOM lines.
+	 *
+	 * @param CommonObject $object
+	 * @param User $user
+	 * @return bool
 	 */
 	private function canDeleteBom(CommonObject $object, User $user): bool
 	{
@@ -499,29 +518,49 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	}
 
 	/**
-	 * Find a line entry by rowid in a list of lines.
+	 * Normalize BOM line positions after deletions to keep ordering consistent.
 	 *
-	 * @return array{index:int,line:object}|null
+	 * @param CommonObject $object
+	 * @param User $user
+	 * @param MassAction $massAction
+	 * @return void
 	 */
-	private function findLineEntryById(array $lines, int $lineId): ?array
+	private function reorderBomLinePositions(CommonObject $object, User $user, MassAction $massAction): void
 	{
-		foreach ($lines as $idx => $line) {
-			$currentId = isset($line->rowid) ? (int) $line->rowid : (int) ($line->id ?? 0);
-			if ($currentId === $lineId) {
-				return array(
-					'index' => (int) $idx,
-					'line' => $line,
-				);
-			}
+		global $langs;
+
+		if (empty($object->lines)) {
+			return;
 		}
 
-		return null;
+		usort($object->lines, static function ($left, $right): int {
+			return (int) $left->position <=> (int) $right->position;
+		});
+
+		$positions = array_map(static function ($line): int {
+			return (int) $line->position;
+		}, $object->lines);
+
+		$nextPosition = min($positions);
+		foreach ($object->lines as $line) {
+			if ((int) $line->position !== $nextPosition) {
+				$line->position = $nextPosition;
+				if ($line->update($user) < 0) {
+				$massAction->TErrors[] = $langs->trans('ErrorUpdateLine', $line->position);
+					return;
+				}
+			}
+			$nextPosition++;
+		}
 	}
 
 	/**
 	 * Delete standard document lines in a single transaction.
 	 *
+	 * @param CommonObject $object
+	 * @param MassAction $massAction
 	 * @param int[] $selectedLineIds
+	 * @return void
 	 */
 	private function deleteStandardLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
 	{
@@ -547,24 +586,62 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	/**
 	 * Delete BOM lines while keeping the revision-linked lines.
 	 *
+	 * @param CommonObject $object
+	 * @param MassAction $massAction
 	 * @param int[] $selectedLineIds
+	 * @return void
 	 */
 	private function deleteBomLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
 	{
-		foreach ($selectedLineIds as $selectedLine) {
-			$object->fetchLines();
-			$entry = $this->findLineEntryById($object->lines, (int) $selectedLine);
-			if ($entry === null) {
-				continue;
-			}
+		global $user, $langs;
 
-			$line = $entry['line'];
-			if (!empty($line->fk_prev_id)) {
-				continue;
-			}
-
-			$massAction->deleteLine((int) $entry['index'], (int) $selectedLine);
+		if (empty($selectedLineIds)) {
+			return;
 		}
+
+		$object->fetchLines();
+		$linesById = array();
+		foreach ($object->lines as $line) {
+			if (isset($line->rowid)) {
+				$linesById[(int) $line->rowid] = $line;
+			}
+		}
+
+		$deletableIds = array();
+		foreach ($selectedLineIds as $selectedLine) {
+			$selectedLine = (int) $selectedLine;
+			if (empty($linesById[$selectedLine])) {
+				continue;
+			}
+			if (!empty($linesById[$selectedLine]->fk_prev_id)) {
+				continue;
+			}
+			$deletableIds[] = $selectedLine;
+		}
+
+		if (empty($deletableIds)) {
+			return;
+		}
+
+		$this->db->begin();
+
+		foreach ($deletableIds as $selectedLine) {
+			$line = $linesById[$selectedLine];
+			if ($line->delete($user) < 0) {
+				$massAction->TErrors[] = $langs->trans('ErrorDeleteLine', $selectedLine);
+				$this->db->rollback();
+				return;
+			}
+		}
+
+		$object->fetchLines();
+		$this->reorderBomLinePositions($object, $user, $massAction);
+		if (!empty($massAction->TErrors)) {
+			$this->db->rollback();
+			return;
+		}
+		$object->calculateCosts();
+		$this->db->commit();
 	}
 
 
@@ -591,6 +668,10 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 			}
 
 			$langs->load('massaction@massaction');
+			if ($object->element === 'bom') {
+				$langs->load('mrp');
+				$langs->load('errors');
+			}
 			$massAction = new MassAction($this->db, $object);
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
@@ -723,6 +804,10 @@ public function doMassActions($parameters, &$object, &$action, $hookmanager)
 			require_once __DIR__ . '/massaction.class.php';
 
 			$langs->load('massaction@massaction');
+			if ($object->element === 'bom') {
+				$langs->load('mrp');
+				$langs->load('errors');
+			}
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
@@ -1090,7 +1175,6 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 													,dataType: "json"
 													// La fonction à apeller si la requête aboutie
 													,success: function (data) {
-														//console.log(data);
 														// Loading data
 														if(data.result > 0){
 															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
@@ -1124,7 +1208,6 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 													// La fonction à apeller si la requête aboutie
 													,success: function (data) {
 														// Loading data
-														//console.log(data);
 														if(data.result > 0){
 															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
 														}
