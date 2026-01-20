@@ -523,22 +523,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		return array_values($ids);
 	}
 
-	/**
-	 * Ensure the BOM object is loaded when actions run from popins.
-	 *
-	 * @param CommonObject $object
-	 * @return void
-	 */
-	private function ensureBomLoaded(CommonObject $object): void
-	{
-		$bomId = (int) ($object->id ?? 0);
-		if ($bomId <= 0) {
-			$bomId = GETPOSTINT('id');
-		}
-		if ($bomId > 0 && method_exists($object, 'fetch')) {
-			$object->fetch($bomId);
-		}
-	}
 
 	/**
 	 * Check if current user can delete BOM lines.
@@ -582,6 +566,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$line->position = $nextPosition;
 				if ($line->update($user) < 0) {
 					$massAction->TErrors[] = $langs->trans('ErrorUpdateLine', $line->position);
+					dol_syslog(__METHOD__.' failed to update BOM line position for line '.$line->id, LOG_ERR);
 					return -1;
 				}
 			}
@@ -613,6 +598,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 
 		if (!empty($massAction->TErrors)) {
+			dol_syslog(__METHOD__.' rollback because of errors: '.json_encode($massAction->TErrors), LOG_ERR);
 			$this->db->rollback();
 		} else {
 			$this->db->commit();
@@ -676,9 +662,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$line = $linesById[$selectedLine];
 			$result = $massAction->deleteLine((int) $index, (int) $selectedLine, false, $line);
 			if ($result < 0) {
-				if ($debugMassAction) {
-					var_dump('bom_delete_failed', $selectedLine, $massAction->TErrors);
-				}
+				dol_syslog(__METHOD__.' failed to delete BOM line '.$selectedLine.' errors: '.json_encode($massAction->TErrors), LOG_ERR);
 				$this->db->rollback();
 				return array('deletedIds' => array(), 'skippedIds' => $skippedIds);
 			}
@@ -687,6 +671,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		$object->fetchLines();
 		if ($this->reorderBomLinePositions($object, $user, $massAction) < 0) {
+			dol_syslog(__METHOD__.' failed to reorder BOM line positions. errors: '.json_encode($massAction->TErrors), LOG_ERR);
 			$this->db->rollback();
 			return array('deletedIds' => array(), 'skippedIds' => $skippedIds);
 		}
@@ -741,8 +726,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$redirectUrl = '';
 
 				if ($object->element === 'bom') {
-					$this->ensureBomLoaded($object);
 					if (!$this->canDeleteBom($object, $user)) {
+						dol_syslog(__METHOD__.' forbidden delete on BOM '.$object->id, LOG_ERR);
 						setEventMessage($langs->trans("ErrorDeleteLineNotAllowedByObjectStatus"), 'errors');
 						$action = '';
 						return 0;
@@ -752,9 +737,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$deleteResult = $this->deleteBomLines($object, $massAction, $selectedLineIds);
 					$selectedLineIds = $deleteResult['deletedIds'];
 				} else {
-					if ($debugMassAction) {
-						var_dump('delete_standard', $selectedLineIds);
-					}
 					$this->deleteStandardLines($object, $massAction, $selectedLineIds);
 				}
 
