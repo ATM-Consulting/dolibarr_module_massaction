@@ -495,7 +495,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 */
 	private function deleteStandardLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
 	{
-		$rowIds = array_column($object->lines, 'rowid');
+		$rowIds = array_map('intval', array_column($object->lines, 'rowid'));
 
 		$this->db->begin();
 
