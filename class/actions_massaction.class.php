@@ -32,9 +32,13 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
 require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/supplier_proposal/class/supplier_proposal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/bom/class/bom.class.php';
+require_once __DIR__ . '/massaction_bom_helper.class.php';
 
 
 
@@ -410,7 +414,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 	}
 
-	function selectCompression() {
+	public function selectCompression(): string {
 		global $langs;
 
 		$compression['gz'] = array('function' => 'gzopen', 'id' => 'compression_gzip', 'label' => $langs->trans("Gzip"));
@@ -434,6 +438,84 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		return $select;
 	}
 
+	/**
+	 * Build the action URL, keeping popin parameters for BOM context.
+	 *
+	 * @param CommonObject $object Current business object.
+	 * @param int $id Object id used in standard cards.
+	 * @return string
+	 */
+	private function getActionUrl(CommonObject $object, int $id): string
+	{
+		if ($object->element === 'bom') {
+			$url = $_SERVER['PHP_SELF'];
+			if (!empty($_SERVER['QUERY_STRING'])) {
+				$url .= '?' . $_SERVER['QUERY_STRING'];
+			}
+			return $url;
+		}
+
+		return $_SERVER['PHP_SELF'] . '?id=' . $id;
+	}
+
+	/**
+	 * Build the confirmation form action URL.
+	 *
+	 * @param CommonObject $object Current business object.
+	 * @param int $id Object id used in standard cards.
+	 * @return string
+	 */
+	private function getFormConfirmPage(CommonObject $object, int $id): string
+	{
+		return $this->getActionUrl($object, $id);
+	}
+
+	/**
+	 * Build the redirect URL to keep popin context after BOM actions.
+	 *
+	 * @return string
+	 */
+	private function getBomRedirectUrl(): string
+	{
+		if (!empty($_SERVER['QUERY_STRING'])) {
+			return $_SERVER['PHP_SELF'] . '?' . $_SERVER['QUERY_STRING'];
+		}
+
+		return $_SERVER['PHP_SELF'];
+	}
+
+
+	/**
+	 * Delete standard document lines in a single transaction.
+	 *
+	 * @param CommonObject $object
+	 * @param MassAction $massAction
+	 * @param int[] $selectedLineIds
+	 * @return void
+	 */
+	private function deleteStandardLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
+	{
+		$rowIds = array_map('intval', array_column($object->lines, 'rowid'));
+
+		$this->db->begin();
+
+		foreach ($selectedLineIds as $selectedLine) {
+			$index = array_search((int) $selectedLine, $rowIds, true);
+			if ($index === false) {
+				continue;
+			}
+			$massAction->deleteLine((int) $index, (int) $selectedLine);
+		}
+
+		if (!empty($massAction->TErrors)) {
+			dol_syslog(__METHOD__.' rollback because of errors: '.json_encode($massAction->TErrors), LOG_ERR);
+			$this->db->rollback();
+		} else {
+			$this->db->commit();
+		}
+	}
+
+
 
 	/**
 	 * @param $parameters
@@ -442,25 +524,34 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param $hookmanager
 	 * @return int
 	 */
-	public function doActions($parameters, &$object, &$action, $hookmanager) : int {
+	public function doActions($parameters, &$object, &$action, $hookmanager) {
 		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
+		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard', 'bomcard'];
 
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
 		if (!empty($commonContexts)) {
 			require_once __DIR__ . '/massaction.class.php';
+			$massActionToken = GETPOST('massaction_token', 'alphanohtml');
 			if (empty($massActionToken)) {
 				$massActionToken = MassAction::getMassActionToken();
 			}
 
 			$langs->load('massaction@massaction');
+			if ($object->element === 'bom') {
+				$langs->load('mrp');
+				$langs->load('errors');
+			}
 			$massAction = new MassAction($this->db, $object);
 
+			$bomHelper = new MassActionBomHelper($this->db);
 			$selectedLines = GETPOST('selectedLines', 'alpha');
-			$TSelectedLines = explode(',', $selectedLines);
+			$selectedLineIds = $bomHelper->getSelectedLineIdsFromCsv($selectedLines);
+			if (empty($selectedLineIds)) {
+				$selectedLineIds = $bomHelper->getSelectedLineIdsFromArray(GETPOST('toselect', 'array'));
+			}
 
 			$confirm = GETPOST('confirm', 'alpha');
 
@@ -469,22 +560,24 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 			if ($action == 'delete_lines' && $confirm == 'yes') {
-				$TRowIds = array_column($object->lines, 'rowid');
+				$redirectUrl = '';
 
-				$this->db->begin();
+				if ($object->element === 'bom') {
+					if (!$bomHelper->canDeleteBom($object, $user)) {
+						dol_syslog(__METHOD__.' forbidden delete on BOM '.$object->id, LOG_ERR);
+						setEventMessage($langs->trans("ErrorDeleteLineNotAllowedByObjectStatus"), 'errors');
+						$action = '';
+						return 0;
+					}
 
-				foreach ($TSelectedLines as $selectedLine) {
-					$index = array_search(intval($selectedLine), $TRowIds);
-					$massAction->deleteLine($index, $selectedLine);
-				}
-
-				if(!empty($massAction->TErrors)) {
-					$this->db->rollback();
+					$redirectUrl = $this->getBomRedirectUrl();
+					$deleteResult = $bomHelper->deleteBomLines($object, $massAction, $selectedLineIds);
+					$selectedLineIds = $deleteResult['deletedIds'];
 				} else {
-					$this->db->commit();
+					$this->deleteStandardLines($object, $massAction, $selectedLineIds);
 				}
 
-				$massAction->handleErrors($TSelectedLines, $massAction->TErrors, $action);
+				$massAction->handleErrors($selectedLineIds, $massAction->TErrors, $action, $redirectUrl);
 
 				$action = '';
 
@@ -507,10 +600,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$this->db->begin();
 
 				if (empty($errors)) {
-					foreach ($TSelectedLines as $selectedLine) {
-						$index = array_search(intval($selectedLine), $TRowIds);
+					foreach ($selectedLineIds as $selectedLine) {
+						$index = array_search((int) $selectedLine, $TRowIds, true);
+						if ($index === false) {
+							continue;
+						}
 
-						$massAction->updateLine($index, $quantity, $marge_tx);
+						$massAction->updateLine((int) $index, $quantity, $marge_tx);
 
 					}
 				}
@@ -521,7 +617,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $errors, $action);
+				$massAction->handleErrors($selectedLineIds, $errors, $action);
 
 				$action = '';
 
@@ -559,7 +655,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$deliveryDate = dol_mktime(12, 0, 0, GETPOSTINT('maxresponse_month'), GETPOSTINT('maxresponse_day'), GETPOSTINT('maxresponse_year'));
 				}
 				// Attachments are already persisted during preSelectSupplierPrice
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, $deliveryDate, array(), $massActionToken);
+				$massAction->handleCreateSupplierPriceAction($object, $selectedLineIds, $supplierIds, (int) $templateId, $deliveryDate, array(), $massActionToken);
 			}
 		}
 		return 0;
@@ -578,7 +674,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		global $langs, $action, $user;
 		$TContexts = explode(':', $parameters['context']);
 
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
+		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard', 'bomcard'];
 
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
@@ -586,6 +682,10 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			require_once __DIR__ . '/massaction.class.php';
 
 			$langs->load('massaction@massaction');
+			if ($object->element === 'bom') {
+				$langs->load('mrp');
+				$langs->load('errors');
+			}
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
 			$TSelectedLines = explode(',', $selectedLines);
@@ -598,6 +698,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$permissionToAdd = $user->hasRight('order', 'creer'); // Perms for order
 			} elseif (in_array('invoicecard', $TContexts)) {
 				$permissionToAdd = $user->hasRight('invoice', 'creer'); // Perms for invoice
+			} elseif (in_array('bomcard', $TContexts)) {
+				$permissionToAdd = $user->hasRight('bom', 'write');
 			}
 
 			$status = $object->status;
@@ -607,155 +709,38 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				(
 					($object->element == 'propal' && $status == Propal::STATUS_DRAFT) ||
 					($object->element == 'facture' && $status == Facture::STATUS_DRAFT) ||
-					($object->element == 'commande' && $status == Commande::STATUS_DRAFT))
+					($object->element == 'commande' && $status == Commande::STATUS_DRAFT) ||
+					($object->element == 'bom' && $status == BOM::STATUS_DRAFT))
 				&& $permissionToAdd
 			) {
-				$massActionButton = MassAction::getMassActionButton($form);
+				$massActionButton = MassAction::getMassActionButton($form, $object);
 				$enableCheckboxes = 1;
 			}
 
-			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form);
+			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form, $this->getFormConfirmPage($object, $id));
 
+			$massActionConfig = array(
+				'actionUrl' => $this->getActionUrl($object, $id),
+				'token' => newToken(),
+				'selectedLines' => $selectedLines,
+				'currentAction' => $action,
+				'massActionButton' => $massActionButton,
+				'formConfirm' => $formConfirm,
+				'enableCheckboxes' => (int) $enableCheckboxes,
+				'isBomContext' => in_array('bomcard', $TContexts),
+				'emptySelectionMessage' => $langs->trans('EmptyTMoveLine'),
+				'labels' => array(
+					'selectAll' => $langs->transnoentities('SelectAll'),
+					'products' => $langs->transnoentities('BOMProductsList'),
+					'services' => $langs->transnoentities('BOMServicesList'),
+				),
+			);
 			?>
 
 			<script type="text/javascript">
-
-				var massActionButton = <?php echo json_encode($massActionButton); ?>;
-
-				var enableCheckboxes = <?php echo $enableCheckboxes; ?>;
-
-				var formConfirm = <?php echo json_encode($formConfirm) ?>;
-
-				function showCheckboxes() {
-					if (enableCheckboxes) {
-						var count = 0;
-
-						// Pour chaque tr, je veux une checkbox dans le td sauf si ce n'est pas une ligne (par exemple le form d'ajout en bas)
-						$('#tablelines tbody tr').each(function () {
-							var rowId = $(this).attr('id');
-							if (rowId && rowId.startsWith("row-")) {
-								count++;
-								var dataId = $(this).data('id');
-								$(this).append('<td class="nowrap" align="center"><input id="cb' + dataId + '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' + dataId + '"></td>');
-							} else if (!$(this).find('td:first').is('[colspan="100%"]')) { // Gestion avec sous-total car il ajoute un td colspan 100%
-								$(this).append('<td></td>');
-							}
-						});
-
-						// Ajout de la checkbox "générale" pour sélectionner toute les lignes d'un coup
-						if (count > 0) {
-							$('#tablelines .liste_titre').append(`
-							<th class="center">
-								<div class="inline-block checkallactions">
-									<input type="checkbox" id="checkforselects" name="checkforselects" class="checkallactions">
-								</div>
-							</th>
-						`);
-						}
-					}
-				}
-
-				// Cette fonction met à jour l'input hidden selectedLines pour ajouter les lignes sélectionnées séparées par virgules
-				function updateSelectedLines() {
-					var TSelectedLines = [];
-					$('.checkforselect:checked').each(function () {
-						TSelectedLines.push($(this).val());
-					})
-					$('#selectedLines').val(TSelectedLines.join(','));
-				}
-
-				$(document).ready(function () {
-
-					// Reset toutes les checkbox
-					$('input[type="checkbox"].checkforselect').prop('checked', false);
-
-					var action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF'] . '?id=' . $id, ENT_QUOTES, 'UTF-8'); ?>";
-
-					var token = "<?php echo newToken() ?>";
-
-					var selectedLines = "<?php echo $selectedLines ?>";
-					var TSelectedLines = selectedLines.split(',');
-
-					var currentAction = "<?php echo $action ?>";
-					var toShow = formConfirm !== '' ? formConfirm : (massActionButton || '');
-
-					var form = `
-						<form method="post" id="massactionForm" action="` + action + `">
-							<input type="hidden" name="token" value="` + token + `">
-							<input type="hidden" name="selectedLines" id="selectedLines" value="` + selectedLines + `">
-							<input type="hidden" name="action" value="">
-
-							` + toShow + `
-
-						</form>
-					`;
-
-					$('#addproduct:last-child').before(form);
-
-					showCheckboxes();
-
-					if (currentAction === 'preSelectSupplierPrice') {
-						$('#massactionForm').attr('enctype', 'multipart/form-data');
-						$('.massaction-remove-file').on('click', function (e) {
-							e.preventDefault();
-							var fname = $(this).data('filename');
-							$('.removedfilehidden').val(fname);
-							$('input[name="action"]').val('preSelectSupplierPrice');
-							$('#confirm').val('no');
-							$('#massactionForm').submit();
-						});
-						$('.massaction-file-input').on('change', function () {
-							if ($(this).val()) {
-								$('input[name="action"]').val('preSelectSupplierPrice');
-								$('#confirm').val('no');
-								$('input[name="sendit"]').val('1');
-								$('#massactionForm').submit();
-							}
-						});
-						$('.confirmvalidatebutton').on('click', function () {
-							$('input[name="action"]').val('createSupplierPrice');
-						});
-					}
-
-					// Cocher automatiquement les cases à cocher si l'action est predelete ou edit_margin ou edit_quantity
-					if (currentAction === 'predelete' || currentAction === 'preeditquantity' || currentAction === 'preeditmargin' || currentAction === 'preSelectSupplierPrice') {
-						$(".checkforselect").each(function () {
-							var checkboxValue = $(this).val();
-							if (TSelectedLines.includes(checkboxValue)) {
-								$(this).prop('checked', true);
-							}
-						});
-						updateSelectedLines();  // Mettre à jour les lignes sélectionnées
-					}
-
-					// Sélection de toutes les lignes si checkforselects est checked
-					$('div.checkallactions #checkforselects').click(function () {
-						if ($(this).is(':checked')) {
-							console.log("We check all checkforselect and trigger the change method");
-							$(".checkforselect").prop('checked', 'true').trigger('change');
-						} else {
-							console.log("We uncheck all");
-							$(".checkforselect").prop('checked', false).trigger('change');
-						}
-						if (typeof initCheckForSelect == 'function') {
-							initCheckForSelect(0, "massaction", "checkforselect")
-						} else {
-							console.log("No function initCheckForSelect found. Call won't be done.")
-						}
-					})
-
-					// Highlight des lignes sélectionnées
-					$('.checkforselect').change(function () {
-						$(this).closest('tr').toggleClass('highlight', this.checked);
-						updateSelectedLines();
-					});
-
-					$(".massactionselect").change(function () {
-						var massaction = $(this).val();
-						$('input[name="action"]').val(massaction);
-					});
-				})
+				window.massactionConfig = <?php echo json_encode($massActionConfig); ?>;
 			</script>
+			<script type="text/javascript" src="<?php echo dol_buildpath('/massaction/js/massaction_bom.js', 1); ?>"></script>
 
 			<?php
 
@@ -773,7 +758,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 *  @return       void
 	 */
 
-	function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $langs,$db,$user, $conf, $mc;
 
@@ -849,7 +834,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 													,dataType: "json"
 													// La fonction à apeller si la requête aboutie
 													,success: function (data) {
-														//console.log(data);
 														// Loading data
 														if(data.result > 0){
 															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
@@ -883,7 +867,6 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 													// La fonction à apeller si la requête aboutie
 													,success: function (data) {
 														// Loading data
-														//console.log(data);
 														if(data.result > 0){
 															document.location.href = "<?php echo dol_buildpath($fiche, 1).'?id='.$object->id; ?>&token=" + data.newToken;
 														}
