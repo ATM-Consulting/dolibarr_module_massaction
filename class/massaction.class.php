@@ -2,6 +2,7 @@
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
+require_once DOL_DOCUMENT_ROOT.'/bom/class/bomline.class.php';
 
 class MassAction {
 
@@ -113,6 +114,17 @@ class MassAction {
 		global $user, $langs;
 
 		switch ($this->object->element) {
+			case "bom":
+				$line = new BOMLine($this->db);
+				$fetchResult = $line->fetch($selectedLine);
+				if ($fetchResult <= 0) {
+					return 1;
+				}
+				if (!empty($line->fk_prev_id)) {
+					return 1;
+				}
+				$resDelete = $this->object->deleteLine($user, $selectedLine);
+				break;
 			case "commande":
 				$resDelete = $this->object->deleteline($user, $selectedLine);
 				break;
@@ -125,7 +137,7 @@ class MassAction {
 		}
 
 		if ($resDelete < 0) {
-			$this->TErrors = $langs->trans('ErrorDeleteLine', $index + 1);
+			$this->TErrors[] = $langs->trans('ErrorDeleteLine', $index + 1);
 		}
 
 		return $resDelete;
@@ -186,10 +198,11 @@ class MassAction {
 	 * @param array $TSelectedLines
 	 * @param array $TErrors
 	 * @param string $action
+	 * @param string $redirectUrl
 	 * @return void
 	 * @throws Exception
 	 */
-	public function handleErrors(array $TSelectedLines, array $TErrors, string $action): void
+	public function handleErrors(array $TSelectedLines, array $TErrors, string $action, string $redirectUrl = ''): void
 	{
 		global $langs;
 
@@ -204,7 +217,8 @@ class MassAction {
 				$confirmMsg = $langs->trans('ConfirmMassDeletionLines', count($TSelectedLines));
 			}
 			setEventMessage($confirmMsg);
-			header('Location: ' . $_SERVER["PHP_SELF"] . '?id=' . $this->object->id);
+			$location = $redirectUrl ?: $_SERVER["PHP_SELF"] . '?id=' . $this->object->id;
+			header('Location: ' . $location);
 		} else {
 			if(!empty($this->db->lasterror())) {
 				$this->TErrors[] = $this->db->lasterror();
@@ -220,9 +234,10 @@ class MassAction {
 	 * @param array $TSelectedLines
 	 * @param int $id
 	 * @param Form $form
+	 * @param string $page
 	 * @return string
 	 */
-	public static function getFormConfirm(string $action, array $TSelectedLines, int $id, Form $form): string
+	public static function getFormConfirm(string $action, array $TSelectedLines, int $id, Form $form, string $page = ''): string
 	{
 		global $langs;
 		$question = null;
@@ -235,7 +250,9 @@ class MassAction {
 
 		$nbrOfSelectedLines = count($TSelectedLines);
 
-		$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
+		if (empty($page)) {
+			$page = $_SERVER["PHP_SELF"] . '?id=' . $id;
+		}
 
 		if ($action == 'predelete') {
 
@@ -357,12 +374,17 @@ class MassAction {
 	 * @param Form $form
 	 * @return string
 	 */
-	public static function getMassActionButton(Form $form): string
+	public static function getMassActionButton(Form $form, $object = null): string
 	{
 		global $langs, $user;
 
 		$nameIcon = ((float) DOL_VERSION <= 18.0) ? 'fa-scissors' : 'fa-cut';
 		$arrayOfMassActions = array();
+
+		if (!empty($object) && $object->element === 'bom') {
+			$arrayOfMassActions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"') . $langs->trans("Delete");
+			return $form->selectMassAction('', $arrayOfMassActions);
+		}
 
 		$arrayOfMassActions['cut'] = img_picto('', $nameIcon, 'class="pictofixedwidth"') . $langs->trans("MassActionCut");
 		if (isModEnabled('margin') && getDolGlobalInt('DISPLAY_MARGIN_RATES')) {

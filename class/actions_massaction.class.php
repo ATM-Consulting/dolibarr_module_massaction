@@ -32,9 +32,12 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/emailing.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once __DIR__.'/../lib/massaction.lib.php';
 require_once __DIR__ . '/../backport/v19/core/class/commonhookactions.class.php';
 require_once DOL_DOCUMENT_ROOT.'/supplier_proposal/class/supplier_proposal.class.php';
+require_once DOL_DOCUMENT_ROOT.'/bom/class/bom.class.php';
 
 
 
@@ -66,7 +69,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$this->db = $db;
 	}
 
-	public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
+public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $user, $massaction, $langs;
 
@@ -148,7 +151,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
 	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
 	 */
-	public function doMassActions($parameters, &$object, &$action, $hookmanager)
+public function doMassActions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
 		$langs->load('massaction@massaction');
@@ -410,7 +413,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 	}
 
-	function selectCompression() {
+	public function selectCompression(): string {
 		global $langs;
 
 		$compression['gz'] = array('function' => 'gzopen', 'id' => 'compression_gzip', 'label' => $langs->trans("Gzip"));
@@ -434,6 +437,136 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		return $select;
 	}
 
+	/**
+	 * Build the action URL, keeping popin parameters for BOM context.
+	 */
+	private function getActionUrl(CommonObject $object, int $id): string
+	{
+		if ($object->element === 'bom') {
+			$url = $_SERVER['PHP_SELF'];
+			if (!empty($_SERVER['QUERY_STRING'])) {
+				$url .= '?' . $_SERVER['QUERY_STRING'];
+			}
+			return $url;
+		}
+
+		return $_SERVER['PHP_SELF'] . '?id=' . $id;
+	}
+
+	/**
+	 * Build the confirmation form action URL.
+	 */
+	private function getFormConfirmPage(CommonObject $object, int $id): string
+	{
+		return $this->getActionUrl($object, $id);
+	}
+
+	/**
+	 * Build the redirect URL to keep popin context after BOM actions.
+	 */
+	private function getBomRedirectUrl(): string
+	{
+		if (!empty($_SERVER['QUERY_STRING'])) {
+			return $_SERVER['PHP_SELF'] . '?' . $_SERVER['QUERY_STRING'];
+		}
+
+		return $_SERVER['PHP_SELF'];
+	}
+
+	/**
+	 * Normalize selected line IDs from CSV input.
+	 *
+	 * @return int[]
+	 */
+	private function getSelectedLineIds(string $selectedLines): array
+	{
+		$ids = array_filter(
+			array_map('intval', explode(',', $selectedLines)),
+			static function (int $value): bool {
+				return $value > 0;
+			}
+		);
+
+		return array_values($ids);
+	}
+
+	/**
+	 * Check if current user can delete BOM lines.
+	 */
+	private function canDeleteBom(CommonObject $object, User $user): bool
+	{
+		return ((int) $object->status === BOM::STATUS_DRAFT) && $user->hasRight('bom', 'write');
+	}
+
+	/**
+	 * Find a line entry by rowid in a list of lines.
+	 *
+	 * @return array{index:int,line:object}|null
+	 */
+	private function findLineEntryById(array $lines, int $lineId): ?array
+	{
+		foreach ($lines as $idx => $line) {
+			$currentId = isset($line->rowid) ? (int) $line->rowid : (int) ($line->id ?? 0);
+			if ($currentId === $lineId) {
+				return array(
+					'index' => (int) $idx,
+					'line' => $line,
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Delete standard document lines in a single transaction.
+	 *
+	 * @param int[] $selectedLineIds
+	 */
+	private function deleteStandardLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
+	{
+		$rowIds = array_column($object->lines, 'rowid');
+
+		$this->db->begin();
+
+		foreach ($selectedLineIds as $selectedLine) {
+			$index = array_search((int) $selectedLine, $rowIds, true);
+			if ($index === false) {
+				continue;
+			}
+			$massAction->deleteLine((int) $index, (int) $selectedLine);
+		}
+
+		if (!empty($massAction->TErrors)) {
+			$this->db->rollback();
+		} else {
+			$this->db->commit();
+		}
+	}
+
+	/**
+	 * Delete BOM lines while keeping the revision-linked lines.
+	 *
+	 * @param int[] $selectedLineIds
+	 */
+	private function deleteBomLines(CommonObject $object, MassAction $massAction, array $selectedLineIds): void
+	{
+		foreach ($selectedLineIds as $selectedLine) {
+			$object->fetchLines();
+			$entry = $this->findLineEntryById($object->lines, (int) $selectedLine);
+			if ($entry === null) {
+				continue;
+			}
+
+			$line = $entry['line'];
+			if (!empty($line->fk_prev_id)) {
+				continue;
+			}
+
+			$massAction->deleteLine((int) $entry['index'], (int) $selectedLine);
+		}
+	}
+
 
 	/**
 	 * @param $parameters
@@ -442,16 +575,17 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 * @param $hookmanager
 	 * @return int
 	 */
-	public function doActions($parameters, &$object, &$action, $hookmanager) : int {
+	public function doActions($parameters, &$object, &$action, $hookmanager) {
 		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
+		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard', 'bomcard'];
 
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
 		if (!empty($commonContexts)) {
 			require_once __DIR__ . '/massaction.class.php';
+			$massActionToken = GETPOST('massaction_token', 'alphanohtml');
 			if (empty($massActionToken)) {
 				$massActionToken = MassAction::getMassActionToken();
 			}
@@ -460,7 +594,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			$massAction = new MassAction($this->db, $object);
 
 			$selectedLines = GETPOST('selectedLines', 'alpha');
-			$TSelectedLines = explode(',', $selectedLines);
+			$selectedLineIds = $this->getSelectedLineIds($selectedLines);
 
 			$confirm = GETPOST('confirm', 'alpha');
 
@@ -469,22 +603,22 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}
 
 			if ($action == 'delete_lines' && $confirm == 'yes') {
-				$TRowIds = array_column($object->lines, 'rowid');
+				$redirectUrl = '';
 
-				$this->db->begin();
+				if ($object->element === 'bom') {
+					if (!$this->canDeleteBom($object, $user)) {
+						setEventMessage($langs->trans("ErrorDeleteLineNotAllowedByObjectStatus"), 'errors');
+						$action = '';
+						return 0;
+					}
 
-				foreach ($TSelectedLines as $selectedLine) {
-					$index = array_search(intval($selectedLine), $TRowIds);
-					$massAction->deleteLine($index, $selectedLine);
-				}
-
-				if(!empty($massAction->TErrors)) {
-					$this->db->rollback();
+					$redirectUrl = $this->getBomRedirectUrl();
+					$this->deleteBomLines($object, $massAction, $selectedLineIds);
 				} else {
-					$this->db->commit();
+					$this->deleteStandardLines($object, $massAction, $selectedLineIds);
 				}
 
-				$massAction->handleErrors($TSelectedLines, $massAction->TErrors, $action);
+				$massAction->handleErrors($selectedLineIds, $massAction->TErrors, $action, $redirectUrl);
 
 				$action = '';
 
@@ -507,10 +641,13 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$this->db->begin();
 
 				if (empty($errors)) {
-					foreach ($TSelectedLines as $selectedLine) {
-						$index = array_search(intval($selectedLine), $TRowIds);
+					foreach ($selectedLineIds as $selectedLine) {
+						$index = array_search((int) $selectedLine, $TRowIds, true);
+						if ($index === false) {
+							continue;
+						}
 
-						$massAction->updateLine($index, $quantity, $marge_tx);
+						$massAction->updateLine((int) $index, $quantity, $marge_tx);
 
 					}
 				}
@@ -521,7 +658,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$this->db->commit();
 				}
 
-				$massAction->handleErrors($TSelectedLines, $errors, $action);
+				$massAction->handleErrors($selectedLineIds, $errors, $action);
 
 				$action = '';
 
@@ -559,7 +696,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					$deliveryDate = dol_mktime(12, 0, 0, GETPOSTINT('maxresponse_month'), GETPOSTINT('maxresponse_day'), GETPOSTINT('maxresponse_year'));
 				}
 				// Attachments are already persisted during preSelectSupplierPrice
-				$massAction->handleCreateSupplierPriceAction($object, $TSelectedLines, $supplierIds, (int) $templateId, $deliveryDate, array(), $massActionToken);
+				$massAction->handleCreateSupplierPriceAction($object, $selectedLineIds, $supplierIds, (int) $templateId, $deliveryDate, array(), $massActionToken);
 			}
 		}
 		return 0;
@@ -578,7 +715,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		global $langs, $action, $user;
 		$TContexts = explode(':', $parameters['context']);
 
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
+		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard', 'bomcard'];
 
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
@@ -598,6 +735,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				$permissionToAdd = $user->hasRight('order', 'creer'); // Perms for order
 			} elseif (in_array('invoicecard', $TContexts)) {
 				$permissionToAdd = $user->hasRight('invoice', 'creer'); // Perms for invoice
+			} elseif (in_array('bomcard', $TContexts)) {
+				$permissionToAdd = $user->hasRight('bom', 'write');
 			}
 
 			$status = $object->status;
@@ -607,14 +746,15 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				(
 					($object->element == 'propal' && $status == Propal::STATUS_DRAFT) ||
 					($object->element == 'facture' && $status == Facture::STATUS_DRAFT) ||
-					($object->element == 'commande' && $status == Commande::STATUS_DRAFT))
+					($object->element == 'commande' && $status == Commande::STATUS_DRAFT) ||
+					($object->element == 'bom' && $status == BOM::STATUS_DRAFT))
 				&& $permissionToAdd
 			) {
-				$massActionButton = MassAction::getMassActionButton($form);
+				$massActionButton = MassAction::getMassActionButton($form, $object);
 				$enableCheckboxes = 1;
 			}
 
-			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form);
+			$formConfirm = MassAction::getFormConfirm($action, $TSelectedLines, $id, $form, $this->getFormConfirmPage($object, $id));
 
 			?>
 
@@ -626,33 +766,97 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 				var formConfirm = <?php echo json_encode($formConfirm) ?>;
 
+				var isBomContext = <?php echo in_array('bomcard', $TContexts) ? 'true' : 'false'; ?>;
+				var emptySelectionMessage = <?php echo json_encode($langs->trans('EmptyTMoveLine')); ?>;
+				// Keep selectors centralized to keep checkbox syncing reliable.
+				var checkboxSelectors = {
+					global: '#massaction-checkall',
+					products: '#massaction-checkall-products',
+					services: '#massaction-checkall-services'
+				};
+
+				// Append a header cell that matches Dolibarr's table header structure.
+				function appendHeaderCell(tableSelector, headerHtml) {
+					var header = $(tableSelector + ' .liste_titre');
+					if (!header.length || header.find('.massaction-header').length) {
+						return;
+					}
+
+					header.append('<td class="center massaction-header liste_titre">' + (headerHtml || '') + '</td>');
+				}
+
+				// Add checkboxes to a table and return how many selectable rows were found.
+				function addCheckboxesToTable(tableSelector, headerHtml) {
+					var count = 0;
+
+					$(tableSelector + ' tbody tr').each(function () {
+						var rowId = $(this).attr('id');
+						if (rowId && rowId.startsWith("row-")) {
+							count++;
+							var dataId = $(this).data('id');
+							if (!$(this).find('.checkforselect').length) {
+								$(this).append('<td class="nowrap" align="center"><input id="cb' + dataId + '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' + dataId + '"></td>');
+							}
+						} else if (!$(this).find('td:first').is('[colspan="100%"]')) {
+							$(this).append('<td></td>');
+						}
+					});
+
+					if (count > 0) {
+						appendHeaderCell(tableSelector, headerHtml);
+					}
+
+					return count;
+				}
+
+				// Inject checkboxes and table-level selectors depending on context.
 				function showCheckboxes() {
 					if (enableCheckboxes) {
-						var count = 0;
-
-						// Pour chaque tr, je veux une checkbox dans le td sauf si ce n'est pas une ligne (par exemple le form d'ajout en bas)
-						$('#tablelines tbody tr').each(function () {
-							var rowId = $(this).attr('id');
-							if (rowId && rowId.startsWith("row-")) {
-								count++;
-								var dataId = $(this).data('id');
-								$(this).append('<td class="nowrap" align="center"><input id="cb' + dataId + '" class="flat checkforselect" type="checkbox" name="toselect[]" value="' + dataId + '"></td>');
-							} else if (!$(this).find('td:first').is('[colspan="100%"]')) { // Gestion avec sous-total car il ajoute un td colspan 100%
-								$(this).append('<td></td>');
-							}
-						});
-
-						// Ajout de la checkbox "générale" pour sélectionner toute les lignes d'un coup
-						if (count > 0) {
-							$('#tablelines .liste_titre').append(`
-							<th class="center">
-								<div class="inline-block checkallactions">
-									<input type="checkbox" id="checkforselects" name="checkforselects" class="checkallactions">
+						if (isBomContext) {
+							var productHeader = `
+								<div class="checkallactions massaction-checkall-line" style="display:block;">
+									<input type="checkbox" id="massaction-checkall" name="checkforselects" class="checkallactions" title="<?php echo $langs->transnoentities('SelectAll'); ?>">
 								</div>
-							</th>
-						`);
+								<div class="checkallactions massaction-checkall-line" style="display:block;">
+									<input type="checkbox" id="massaction-checkall-products" name="checkforselects_products" class="checkallactions" title="<?php echo $langs->transnoentities('BOMProductsList'); ?>">
+								</div>
+							`;
+							var serviceHeader = `
+								<div class="checkallactions massaction-checkall-line" style="display:block;">
+									<input type="checkbox" id="massaction-checkall-services" name="checkforselects_services" class="checkallactions" title="<?php echo $langs->transnoentities('BOMServicesList'); ?>">
+								</div>
+							`;
+							addCheckboxesToTable('#tablelines', productHeader);
+							addCheckboxesToTable('#tablelinesservice', serviceHeader);
+						} else {
+							var defaultHeader = `
+								<div class="checkallactions massaction-checkall-line" style="display:block;">
+									<input type="checkbox" id="massaction-checkall" name="checkforselects" class="checkallactions">
+								</div>
+							`;
+							addCheckboxesToTable('#tablelines', defaultHeader);
 						}
 					}
+				}
+
+				// Keep header toggles consistent with actual line selection and table availability.
+				function syncCheckAllState() {
+					if (!isBomContext) {
+						return;
+					}
+
+					var productBoxes = $('#tablelines .checkforselect');
+					var serviceBoxes = $('#tablelinesservice .checkforselect');
+					var hasProducts = productBoxes.length > 0;
+					var hasServices = serviceBoxes.length > 0;
+
+					var allProductChecked = hasProducts && productBoxes.filter(':checked').length === productBoxes.length;
+					var allServiceChecked = hasServices && serviceBoxes.filter(':checked').length === serviceBoxes.length;
+
+					$(checkboxSelectors.products).prop('checked', allProductChecked).prop('disabled', !hasProducts);
+					$(checkboxSelectors.services).prop('checked', allServiceChecked).prop('disabled', !hasServices);
+					$(checkboxSelectors.global).prop('checked', hasProducts && hasServices && allProductChecked && allServiceChecked)
+						.prop('disabled', !hasProducts && !hasServices);
 				}
 
 				// Cette fonction met à jour l'input hidden selectedLines pour ajouter les lignes sélectionnées séparées par virgules
@@ -669,7 +873,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 					// Reset toutes les checkbox
 					$('input[type="checkbox"].checkforselect').prop('checked', false);
 
-					var action = "<?php echo htmlspecialchars($_SERVER['PHP_SELF'] . '?id=' . $id, ENT_QUOTES, 'UTF-8'); ?>";
+					var action = "<?php echo htmlspecialchars($this->getActionUrl($object, $id), ENT_QUOTES, 'UTF-8'); ?>";
 
 					var token = "<?php echo newToken() ?>";
 
@@ -690,9 +894,17 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 						</form>
 					`;
 
-					$('#addproduct:last-child').before(form);
+					var formTarget = $('#addproduct:last-child');
+					if (!formTarget.length) {
+						formTarget = $('#listbomproducts');
+					}
+					if (!formTarget.length) {
+						formTarget = $('#listbomservices');
+					}
+					formTarget.before(form);
 
 					showCheckboxes();
+					syncCheckAllState();
 
 					if (currentAction === 'preSelectSupplierPrice') {
 						$('#massactionForm').attr('enctype', 'multipart/form-data');
@@ -726,32 +938,61 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 							}
 						});
 						updateSelectedLines();  // Mettre à jour les lignes sélectionnées
+						syncCheckAllState();
 					}
 
 					// Sélection de toutes les lignes si checkforselects est checked
-					$('div.checkallactions #checkforselects').click(function () {
-						if ($(this).is(':checked')) {
-							console.log("We check all checkforselect and trigger the change method");
-							$(".checkforselect").prop('checked', 'true').trigger('change');
-						} else {
-							console.log("We uncheck all");
-							$(".checkforselect").prop('checked', false).trigger('change');
+					// Global toggle applies to both tables in BOM context.
+					$(document).on('click', checkboxSelectors.global, function () {
+						var checked = $(this).is(':checked');
+						$(".checkforselect").prop('checked', checked).trigger('change');
+						$(checkboxSelectors.products).prop('checked', checked);
+						$(checkboxSelectors.services).prop('checked', checked);
+						if (typeof initCheckForSelect == 'function') {
+							initCheckForSelect(0, "massaction", "checkforselect")
+						}
+					});
+
+					// Product/service toggles apply to their own table only.
+					$(document).on('click', checkboxSelectors.products, function () {
+						var checked = $(this).is(':checked');
+						$('#tablelines .checkforselect').prop('checked', checked).trigger('change');
+						if (!checked) {
+							$(checkboxSelectors.global).prop('checked', false);
 						}
 						if (typeof initCheckForSelect == 'function') {
 							initCheckForSelect(0, "massaction", "checkforselect")
-						} else {
-							console.log("No function initCheckForSelect found. Call won't be done.")
 						}
-					})
+					});
+
+					$(document).on('click', checkboxSelectors.services, function () {
+						var checked = $(this).is(':checked');
+						$('#tablelinesservice .checkforselect').prop('checked', checked).trigger('change');
+						if (!checked) {
+							$(checkboxSelectors.global).prop('checked', false);
+						}
+						if (typeof initCheckForSelect == 'function') {
+							initCheckForSelect(0, "massaction", "checkforselect")
+						}
+					});
 
 					// Highlight des lignes sélectionnées
 					$('.checkforselect').change(function () {
 						$(this).closest('tr').toggleClass('highlight', this.checked);
 						updateSelectedLines();
+						if (isBomContext) {
+							// Keep table-level and global selectors aligned with current selection.
+							syncCheckAllState();
+						}
 					});
 
 					$(".massactionselect").change(function () {
 						var massaction = $(this).val();
+						if (massaction && $('.checkforselect:checked').length === 0) {
+							alert(emptySelectionMessage);
+							$(this).val('');
+							return;
+						}
 						$('input[name="action"]').val(massaction);
 					});
 				})
@@ -773,7 +1014,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	 *  @return       void
 	 */
 
-	function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $langs,$db,$user, $conf, $mc;
 
