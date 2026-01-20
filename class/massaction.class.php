@@ -537,14 +537,10 @@ class MassAction {
 		$supplierProposal->origin_type = $object->element;
 		$supplierProposal->origin_id = $object->id;
 		if (getDolGlobalInt('MASSACTION_COPY_REFCLIENT_TO_SUPPLIERPROPOSAL') && empty($supplierProposal->ref_fourn)) {
-			$refClient = '';
 			if (!empty($object->ref_client)) {
-				$refClient = $object->ref_client;
+				$supplierProposal->ref_fourn = $object->ref_client;
 			} elseif (!empty($object->ref_customer)) {
-				$refClient = $object->ref_customer;
-			}
-			if (!empty($refClient)) {
-				$supplierProposal->ref_fourn = $refClient;
+				$supplierProposal->ref_fourn = $object->ref_customer;
 			}
 		}
 		if (!empty($object->fk_project)) {
