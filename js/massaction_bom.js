@@ -109,7 +109,7 @@
 			+ toShow
 			+ '</form>';
 
-		var formTarget = $('#addproduct:last-child');
+		var formTarget = $('#addproduct');
 		if (!formTarget.length) {
 			formTarget = $('#listbomproducts');
 		}
