@@ -3,7 +3,11 @@
 ## Unreleased
 
 ## Release 1.7
-- FIX : Compat v23  - *02/12/2025* - 1.7.1
+- FIX : Compat v23  - *02/12/2025* - 1.7.5
+- FIX : ST-5 - add field Maximum response date on supplier proposal massaction - *20/12/2025* - 1.7.4
+- FIX : ST-7 Add attachments when generating supplier RFQs - *19/12/2025* - 1.7.3
+- NEW : ST-7 Add user attachments when generating supplier RFQs (upload, store on proposal, include in emails, remove before confirm) - *15/12/2025* - 1.7.2
+- FIX : When converting a quote into a price request, VAT must be charged. - *05/11/2025* -1.7.1
 - NEW : Add mass action to create a new supplier proposal from a customer proposal or order - *09/10/2025* - 1.7.0
 
 ## Release 1.6

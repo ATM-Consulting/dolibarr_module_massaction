@@ -121,6 +121,7 @@ MassActionCreateSupplierPrice = Créer une demande de prix
 MassActionConfirmcreateSupplierPrice = Êtes-vous sûr de vouloir générer la demande de prix fournisseur pour les %s lignes ?
 MassActionSelectSupplier = Sélectionnez les fournisseurs :
 MassActionSelectModelEmail = Sélectionner le modèle de mail :
+MassActionAddAttachments = Ajouter des pièces jointes
 MassActionErrorFailedToSendMailTo = Impossible d'envoyer le mail pour le fournisseur %s
 MassActionSupplierPriceRequestCreatedFor = Demande de prix créer pour le fournisseur %s : %s
 
@@ -134,3 +135,6 @@ MassActionErrorCouldNotFindlineDetails = Impossibles de récupérer le détails 
 MassActionFailedToCreateSupplierProposal = Échec de la création de la demande de prix fournisseur :
 MassActionFailedToGeneratePDF =	Échec de génération du pdf :
 MassActionFailedToSendEmail = Échec de l'envoi du mail :
+FileTransmitted=Fichier transmis
+FileDeleted=Fichier supprimé
+ErrorFailedToDeleteFile=Impossible de supprimer le fichier %s
