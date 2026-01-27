@@ -1,9 +1,28 @@
 <?php
+/* Copyright (C) 2025 ATM Consulting
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
 
-class MassAction {
+/**
+ * Class for MassAction
+ */
+class MassAction
+{
 
 	public $TErrors = [];
 
@@ -12,7 +31,10 @@ class MassAction {
 	public $db;
 
 	/**
-	 * @param $object
+	 * Constructor.
+	 *
+	 * @param DoliDB $db     Database handler.
+	 * @param object $object The target business object to process.
 	 */
 	public function __construct($db, $object)
 	{
@@ -22,10 +44,15 @@ class MassAction {
 
 
 	/**
-	 * @param int $index
-	 * @param float $quantity
-	 * @param float|null $marge
-	 * @return int
+	 * Updates a specific line within the current object.
+	 *
+	 * Recalculates the unit price if a margin is provided, preserves existing line data,
+	 * and routes the update to the correct object-specific method (Propal, Order, or Invoice).
+	 *
+	 * @param int        $index    The array index of the line to update.
+	 * @param float|null $quantity The new quantity (null to keep existing).
+	 * @param float|null $marge    The new margin rate to recalculate price (null to keep existing price).
+	 * @return int Returns >0 on success, <0 on failure.
 	 */
 	public function updateLine(int $index, ?float $quantity, ?float $marge = null): int
 	{
@@ -57,7 +84,7 @@ class MassAction {
 		$ref_ext = $this->object->lines[$index]->ref_ext;
 		$rang = $this->object->lines[$index]->rang;
 
-		if($marge !== null && $marge !== '') {
+		if ($marge !== null && $marge !== '') {
 			$marge = floatval($marge);
 			$pu_ht = MassAction::getPuByMargin($this->object, $index, $marge, $pa_ht);
 		} else $pu_ht = $subprice;
@@ -80,7 +107,7 @@ class MassAction {
 					$rowid, $desc, $pu_ht, $quantity,
 					$remise_percent, $txtva, $txlocaltax1, $txlocaltax2, $price_base_type, $info_bits, $date_start, $date_end,
 					$type, $fk_parent_line, $skip_update_total,
-					$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $fk_unit, 0, $notrigger, $ref_ext,$rang
+					$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $fk_unit, 0, $notrigger, $ref_ext, $rang
 				);
 				break;
 			case "facture":
@@ -88,14 +115,14 @@ class MassAction {
 					$rowid, $desc, $pu_ht, $quantity,
 					$remise_percent, $date_start, $date_end, $txtva, $txlocaltax1, $txlocaltax2, $price_base_type, $info_bits,
 					$type, $fk_parent_line, $skip_update_total,
-					$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $situation_percent, $fk_unit, 0, $notrigger, $ref_ext,$rang
+					$fk_fournprice, $pa_ht, $label, $special_code, $array_options, $situation_percent, $fk_unit, 0, $notrigger, $ref_ext, $rang
 				);
 				break;
 			default:
 				break;
 		}
 
-		if ($resUpdate < 0){
+		if ($resUpdate < 0) {
 			$this->TErrors[] = $langs->trans('ErrorUpdateLine', $index + 1);
 		}
 
@@ -104,9 +131,14 @@ class MassAction {
 	}
 
 	/**
-	 * @param int $index
-	 * @param int $selectedLine
-	 * @return int
+	 * Deletes a specific line from the current object.
+	 *
+	 * Routes the deletion request to the appropriate method based on the object type
+	 * (Order, Invoice, or Proposal), handling differences in method signatures.
+	 *
+	 * @param int $index        The visual index of the line (used for error reporting).
+	 * @param int $selectedLine The unique database ID (rowid) of the line to delete.
+	 * @return int Returns >0 on success, <0 on failure.
 	 */
 	public function deleteLine(int $index, int $selectedLine): int
 	{
@@ -132,13 +164,18 @@ class MassAction {
 	}
 
 	/**
-	 * @param CommonObject $object
-	 * @param int $index
-	 * @param float $marge_tx
-	 * @param float $pa_ht
-	 * @return float
+	 * Calculates the new unit price based on a desired margin rate.
+	 *
+	 * Applies the margin to the buying price (cost) and adjusts for any existing
+	 * discount on the line to ensure the final margin is respected.
+	 *
+	 * @param CommonObject $object   The business object.
+	 * @param int          $index    The line index.
+	 * @param float        $marge_tx The desired margin rate (%).
+	 * @param float        $pa_ht    The buying price (cost price).
+	 * @return float The calculated unit price (HT), or -1 if cost price is invalid.
 	 */
-	private function getPuByMargin(CommonObject $object, int $index, float $marge_tx, float $pa_ht): float
+	private static function getPuByMargin(CommonObject $object, int $index, float $marge_tx, float $pa_ht): float
 	{
 		global $langs;
 
@@ -157,7 +194,16 @@ class MassAction {
 
 		return $pu_ht;
 	}
-
+	/**
+	 * Validates input values for mass update actions.
+	 *
+	 * Checks if the provided value is numeric and enforces non-negative constraints
+	 * specifically for quantity updates.
+	 *
+	 * @param string $action The action type (e.g., 'edit_quantity', 'edit_margin').
+	 * @param mixed  $field  The input value to validate.
+	 * @return array An array of error messages, or empty if valid.
+	 */
 	public static function checkFields($action, $field)
 	{
 
@@ -173,7 +219,7 @@ class MassAction {
 			// Convertir en float seulement si la validation est réussie
 			$field = floatval($field);
 
-			if($action == 'edit_quantity' && $field < 0) {
+			if ($action == 'edit_quantity' && $field < 0) {
 				$TErrors[] = $langs->trans('ErrorQtyNegative');
 			}
 		}
@@ -183,9 +229,14 @@ class MassAction {
 	}
 
 	/**
-	 * @param array $TSelectedLines
-	 * @param array $TErrors
-	 * @param string $action
+	 * Finalizes mass action execution by handling user feedback and navigation.
+	 *
+	 * Displays a success message and redirects on success, or logs errors
+	 * and displays distinct error notifications on failure.
+	 *
+	 * @param array  $TSelectedLines List of processed line IDs.
+	 * @param array  $TErrors        List of errors encountered during execution.
+	 * @param string $action         The action type (e.g., 'delete_lines', 'edit_quantity').
 	 * @return void
 	 * @throws Exception
 	 */
@@ -206,7 +257,7 @@ class MassAction {
 			setEventMessage($confirmMsg);
 			header('Location: ' . $_SERVER["PHP_SELF"] . '?id=' . $this->object->id);
 		} else {
-			if(!empty($this->db->lasterror())) {
+			if (!empty($this->db->lasterror())) {
 				$this->TErrors[] = $this->db->lasterror();
 			}
 			setEventMessages('Errors', $this->TErrors, 'errors');
@@ -216,11 +267,16 @@ class MassAction {
 	}
 
 	/**
-	 * @param string $action
-	 * @param array $TSelectedLines
-	 * @param int $id
-	 * @param Form $form
-	 * @return string
+	 * Generates the HTML for a mass action confirmation modal.
+	 *
+	 * Configures the dialog title, question, and input fields based on the
+	 * requested action (delete, edit quantity, supplier select, etc.).
+	 *
+	 * @param string $action         The triggered action (e.g., 'predelete').
+	 * @param array  $TSelectedLines Array of selected line IDs.
+	 * @param int    $id             The parent object ID (used for form URL).
+	 * @param Form   $form           The Dolibarr Form handler.
+	 * @return string The rendered HTML of the confirmation modal.
 	 */
 	public static function getFormConfirm(string $action, array $TSelectedLines, int $id, Form $form): string
 	{
@@ -354,8 +410,13 @@ class MassAction {
 	}
 
 	/**
-	 * @param Form $form
-	 * @return string
+	 * Generates the HTML selector for available mass actions.
+	 *
+	 * Builds the list of actions (Split, Edit Margin/Qty, Delete, Supplier Request)
+	 * based on the current Dolibarr version, user permissions, and module settings.
+	 *
+	 * @param Form $form The Dolibarr Form handler.
+	 * @return string The rendered HTML of the mass action selector.
 	 */
 	public static function getMassActionButton(Form $form): string
 	{

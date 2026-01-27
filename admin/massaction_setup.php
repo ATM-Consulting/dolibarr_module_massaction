@@ -22,51 +22,44 @@
  * 				Put some comments here
  */
 // Dolibarr environment
-$res = @include("../../main.inc.php"); // From htdocs directory
+$res = @include "../../main.inc.php"; // From htdocs directory
 if (! $res) {
-    $res = @include("../../../main.inc.php"); // From "custom" directory
+	$res = @include "../../../main.inc.php"; // From "custom" directory
 }
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
 require_once '../lib/massaction.lib.php';
-dol_include_once('abricot/includes/lib/admin.lib.php');
+require_once dirname(__DIR__) .'/class/toolsMassactions.class.php';
+
 // Translations
 $langs->load("massaction@massaction");
 // Access control
 if (! $user->admin) {
-    accessforbidden();
+	accessforbidden();
 }
 // Parameters
 $action = GETPOST('action', 'aZ09');
 /*
  * Actions
  */
-if (preg_match('/set_(.*)/',$action,$reg))
-{
-    $code=$reg[1];
-    if (dolibarr_set_const($db, $code, GETPOST($code, 'aZ09'), 'chaine', 0, '', $conf->entity) > 0)
-    {
-        header("Location: ".$_SERVER["PHP_SELF"]);
-        exit;
-    }
-    else
-    {
-        dol_print_error($db);
-    }
+if (preg_match('/set_(.*)/', $action, $reg)) {
+	$code=$reg[1];
+	if (dolibarr_set_const($db, $code, GETPOST($code, 'aZ09'), 'chaine', 0, '', $conf->entity) > 0) {
+		header("Location: ".$_SERVER["PHP_SELF"]);
+		exit;
+	} else {
+		dol_print_error($db);
+	}
 }
 
-if (preg_match('/del_(.*)/',$action,$reg))
-{
-    $code=$reg[1];
-    if (dolibarr_del_const($db, $code, 0) > 0)
-    {
-        Header("Location: ".$_SERVER["PHP_SELF"]);
-        exit;
-    }
-    else
-    {
-        dol_print_error($db);
-    }
+if (preg_match('/del_(.*)/', $action, $reg)) {
+	$code=$reg[1];
+	if (dolibarr_del_const($db, $code, 0) > 0) {
+		Header("Location: ".$_SERVER["PHP_SELF"]);
+		exit;
+	} else {
+		dol_print_error($db);
+	}
 }
 /*
  * View
@@ -75,33 +68,28 @@ $page_name = "MassActionSetupPage";
 llxHeader('', $langs->trans($page_name));
 // Subheader
 $linkback = '<a href="' . DOL_URL_ROOT . '/admin/modules.php">'
-    . $langs->trans("BackToModuleList") . '</a>';
+	. $langs->trans("BackToModuleList") . '</a>';
 print load_fiche_titre($langs->trans($page_name), $linkback);
 // Configuration header
 $head = massactionAdminPrepareHead();
 dol_fiche_head(
-    $head,
-    'settings',
-    $langs->trans("ModuleMassActionName"),
-    -1,
-    "massaction@massaction"
+	$head,
+	'settings',
+	$langs->trans("ModuleMassActionName"),
+	-1,
+	"massaction@massaction"
 );
 // Setup page goes here
 $form = new Form($db);
 $var = false;
 print '<table class="noborder" width="100%">';
-if(!function_exists('setup_print_title')){
-    print '<div class="error" >'.$langs->trans('AbricotNeedUpdate').' : <a href="http://wiki.atm-consulting.fr/index.php/Accueil#Abricot" target="_blank"><i class="fa fa-info"></i> Wiki</a></div>';
-    exit;
-}
-setup_print_title("Parameters");
-
+toolsMassactions::setupPrintTitle("Parameters");
 $predefinedPrice = getDolGlobalInt('SUPPLIER_PROPOSAL_WITH_PREDEFINED_PRICES_ONLY') ? $langs->trans('MassActionSetupCreateProposalSupplierWithConf') : null;
 
 // Example with a yes / no select
-setup_print_on_off('MASSACTION_AUTO_DOWNLOAD', $langs->trans('SetupAutoDownloadTitle') , $langs->trans('SetupAutoDownloadDesc'));
-setup_print_on_off('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL', $langs->trans('MassActionSetupAutoSendSupplierProposal'), $predefinedPrice);
-setup_print_on_off('MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO', $langs->trans('MassActionSetupCreateProposalSupplierToZero'));
+toolsMassactions::setupPrintOnOff('MASSACTION_AUTO_DOWNLOAD', $langs->trans('SetupAutoDownloadTitle'), $langs->trans('SetupAutoDownloadDesc'));
+toolsMassactions::setupPrintOnOff('MASSACTION_AUTO_SEND_SUPPLIER_PROPOSAL', $langs->trans('MassActionSetupAutoSendSupplierProposal'), $predefinedPrice);
+toolsMassactions::setupPrintOnOff('MASSACTION_CREATE_SUPPLIER_PROPOSAL_TO_ZERO', $langs->trans('MassActionSetupCreateProposalSupplierToZero'));
 print '</table>';
 dol_fiche_end(-1);
 llxFooter();

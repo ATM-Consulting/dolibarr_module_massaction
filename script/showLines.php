@@ -1,4 +1,19 @@
 <?php
+/* Copyright (C) 2025 ATM Consulting
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 	if (! defined('NOTOKENRENEWAL')) define('NOTOKENRENEWAL', '1');				// Do not roll the Anti CSRF token (used if MAIN_SECURITY_CSRF_WITH_TOKEN is on)
 	//if (! defined('NOSTYLECHECK'))             define('NOSTYLECHECK', '1');				// Do not check style html tag into posted data
 	if (! defined('NOREQUIREMENU')) define('NOREQUIREMENU', '1');				// If there is no need to load and show top and left menu
@@ -14,9 +29,9 @@
 	//if (! defined('CSRFCHECK_WITH_TOKEN'))     define('CSRFCHECK_WITH_TOKEN', '1');		// Force use of CSRF protection with tokens even for GET
 	//if (! defined('NOBROWSERNOTIF'))     		 define('NOBROWSERNOTIF', '1');				// Disable browser notification
 
-	if(is_file('../main.inc.php')) include("../main.inc.php");
-	else  if(is_file('../../../main.inc.php')) include("../../../main.inc.php");
-	else include("../../main.inc.php");
+	if (is_file('../main.inc.php')) include "../main.inc.php";
+elseif (is_file('../../../main.inc.php')) include "../../../main.inc.php";
+else include "../../main.inc.php";
 
 	require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
@@ -39,7 +54,7 @@
 
 	$token = function_exists('newToken')?newToken():$_SESSION['newtoken'];
 
-	?>
+?>
 	<form name="splitform" id="splitform">
 		<input type="hidden" name="element" value="<?php echo $element ?>" />
 		<input type="hidden" name="id" value="<?php echo $id ?>" />
@@ -53,12 +68,12 @@
 	$form=new Form($db);
 	if ((float) DOL_VERSION < 18.0) {
 		echo $form->select_company($object->socid, 'socid', '(s.client=1 OR s.client=2 OR s.client=3)');
-	}else{
+	} else {
 		echo $form->select_company($object->socid, 'socid', '( (s.client:=:1) OR (s.client:=:2)  OR (s.client:=:3) )');
 	}
 
 
-	if(!empty($mc)) {
+	if (!empty($mc)) {
 		echo ' - '. $langs->trans('EntityTo').' : '. $mc->select_entities($conf->entity, 'split_entity');
 	}
 
@@ -83,7 +98,7 @@
 
 	$TRowIds = array_column($object->lines, 'rowid');
 
-	$TSelectedLines = explode(',',$selectedLines);
+	$TSelectedLines = explode(',', $selectedLines);
 
 	if (!empty($TSelectedLines)) {
 		foreach ($TSelectedLines as $selectedLine) {
@@ -93,15 +108,14 @@
 
 			$line = $object->lines[$index];
 
-			if($line->fk_product>0) {
+			if ($line->fk_product>0) {
 				$prod=new Product($db);
 				$prod->fetch($line->fk_product);
 
 				$text = $prod->getNomUrl(1).' - '.$prod->label;
 				$desc = dol_htmlentitiesbr($line->desc);
-				$label = $form->textwithtooltip($text,$desc,3);
-			}
-			else{
+				$label = $form->textwithtooltip($text, $desc, 3);
+			} else {
 				$label = !empty($line->desc) ? $line->desc : $line->label;
 			}
 
@@ -110,29 +124,26 @@
 
 			$class=($class=='impair') ? 'pair':'impair';
 
-			if($line->product_type==9) {
+			if ($line->product_type==9) {
 				?>
 				<tr class="<?php echo $class; ?>">
 					<td colspan="6" style="font-weight: bold;"><?php echo $label ?></td>
 					<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
 				</tr>
 				<?php
-
-			}
-			else{
+			} else {
 				?>
 				<tr class="<?php echo $class; ?>">
 					<td><?php echo $label ?></td>
-					<td align="right"><?php echo round($line->tva_tx,2) ?>%</td>
-					<td align="right"><?php echo price(empty($line->subprice)?$line->price:$line->subprice,0,'',1,-1,-1,$conf->currency); ?></td>
+					<td align="right"><?php echo round($line->tva_tx, 2) ?>%</td>
+					<td align="right"><?php echo price(empty($line->subprice)?$line->price:$line->subprice, 0, '', 1, -1, -1, $conf->currency); ?></td>
 					<td align="right"><?php echo $line->qty ?></td>
-					<td align="right"><?php echo round($line->remise_percent,2) ?>%</td>
-					<td align="right"><?php echo price($line->total_ht,0,'',1,-1,-1,$conf->currency); ?></td>
+					<td align="right"><?php echo round($line->remise_percent, 2) ?>%</td>
+					<td align="right"><?php echo price($line->total_ht, 0, '', 1, -1, -1, $conf->currency); ?></td>
 					<td align="center"><input type="checkbox" checked name="TMoveLine[<?php echo $k; ?>]" value="<?php echo $lineid ?>" /></td>
 				</tr>
 				<?php
 			}
-
 		}
 	}
 
