@@ -175,7 +175,7 @@ class MassAction
 	 * @param float        $pa_ht    The buying price (cost price).
 	 * @return float The calculated unit price (HT), or -1 if cost price is invalid.
 	 */
-	private function getPuByMargin(CommonObject $object, int $index, float $marge_tx, float $pa_ht): float
+	private static function getPuByMargin(CommonObject $object, int $index, float $marge_tx, float $pa_ht): float
 	{
 		global $langs;
 
