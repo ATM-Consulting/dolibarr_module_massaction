@@ -40,9 +40,9 @@ class modmassaction extends DolibarrModules
 	 */
 	public function __construct($db)
 	{
-		global $langs,$conf;
+        global $langs,$conf;
 
-		$this->db = $db;
+        $this->db = $db;
 
 		$this->editor_name = 'ATM Consulting';
 		$this->editor_url = 'https://www.atm-consulting.fr';
@@ -61,7 +61,7 @@ class modmassaction extends DolibarrModules
 		// Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
 		$this->description = "ModuleMassActionDesc";
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.7.5';
+		$this->version = '1.8.0';
 		// Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
 		$this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
 		// Where to store the module in setup page (0=common,1=interface,2=others,3=very specific)
@@ -101,7 +101,7 @@ class modmassaction extends DolibarrModules
 		// );
 		$this->const = array();
 
-		$this->tabs = array();
+        $this->tabs = array();
 
 		// Dictionaries
 		if (! isModEnabled('massaction')) {
@@ -110,9 +110,9 @@ class modmassaction extends DolibarrModules
 		}
 		$this->dictionaries=array();
 
-		// Boxes
+        // Boxes
 		// Add here list of php file(s) stored in core/boxes that contains class to show a box.
-		$this->boxes = array();			// List of boxes
+        $this->boxes = array();			// List of boxes
 
 		// Permissions
 		$this->rights = array();		// Permission array used by this module
