@@ -1,4 +1,19 @@
 <?php
+/* Copyright (C) 2025 ATM Consulting
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 	if (! defined('NOTOKENRENEWAL'))           define('NOTOKENRENEWAL', '1');				// Do not roll the Anti CSRF token (used if MAIN_SECURITY_CSRF_WITH_TOKEN is on)
 	//if (! defined('NOSTYLECHECK'))             define('NOSTYLECHECK', '1');				// Do not check style html tag into posted data
 	if (! defined('NOREQUIREMENU')) define('NOREQUIREMENU', '1');				// If there is no need to load and show top and left menu
@@ -14,9 +29,9 @@
 	//if (! defined('CSRFCHECK_WITH_TOKEN'))     define('CSRFCHECK_WITH_TOKEN', '1');		// Force use of CSRF protection with tokens even for GET
 	//if (! defined('NOBROWSERNOTIF'))     		 define('NOBROWSERNOTIF', '1');				// Disable browser notification
 
-	if(is_file('../main.inc.php')) include("../main.inc.php");
-	else  if(is_file('../../../main.inc.php')) include("../../../main.inc.php");
-	else include("../../main.inc.php");
+	if (is_file('../main.inc.php')) include "../main.inc.php";
+elseif (is_file('../../../main.inc.php')) include "../../../main.inc.php";
+else include "../../main.inc.php";
 
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
@@ -40,199 +55,183 @@
 	$entity = GETPOST('split_entity', 'int');
 	$TMoveLine = GETPOST('TMoveLine', 'array');
 	$langs->load('massaction@massaction');
-	if(empty($TMoveLine)){
-		$json->result = -1; // 0 nothing, 1 ok, -x errors
-		$json->errorMessage = $langs->trans('EmptyTMoveLine');
-		print json_encode($json);
-		exit;
-	}
+if (empty($TMoveLine)) {
+	$json->result = -1; // 0 nothing, 1 ok, -x errors
+	$json->errorMessage = $langs->trans('EmptyTMoveLine');
+	print json_encode($json);
+	exit;
+}
 
 	$classname = $element;
 	global $id_origin_line;
 	$object = new $classname($db);
 	$object->fetch($id);
 
-	if(empty($entity))$entity=$conf->entity;
+	if (empty($entity))$entity=$conf->entity;
 
-	if($action == 'split' || $action=='copy') {
-		$json->result = 1; // vu que à la base il n'y a pas de gestion d'erreur sur ce script il faut partir du postula que c'est ok, perso ça me rends fou, mais on pourra le passer à -1 si erreurs plus tard... mais franchement c'est moche...
+if ($action == 'split' || $action=='copy') {
+	$json->result = 1; // vu que à la base il n'y a pas de gestion d'erreur sur ce script il faut partir du postula que c'est ok, perso ça me rends fou, mais on pourra le passer à -1 si erreurs plus tard... mais franchement c'est moche...
 
-		$fk_target = GETPOST('fk_element_split', 'int');
-		if ($fk_target > 0)
-		{
-			$new_object = new $classname($db);
-			$new_object->fetch($fk_target);
+	$fk_target = GETPOST('fk_element_split', 'int');
+	if ($fk_target > 0) {
+		$new_object = new $classname($db);
+		$new_object->fetch($fk_target);
 
-			// copie des coefs de la propal source si la propal de destination en est dépourvu
+		// copie des coefs de la propal source si la propal de destination en est dépourvu
 
-			if(!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
-				dol_include_once('/nomenclature/class/nomenclature.class.php');
-				$PDOdb = new TPDOdb;
+		if (!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
+			dol_include_once('/nomenclature/class/nomenclature.class.php');
+			$PDOdb = new TPDOdb;
 
-				if (!empty($TMoveLine)) // on ne copie les coefs que si y a des lignes à copier...
-				{
-					$coef = new TNomenclatureCoefObject;
-					$TCoef = $coef->loadCoefObject($PDOdb, $object, $element, $object->id);
-					if (!empty($TCoef))
-					{
-						$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'nomenclature_coef_object
-							WHERE fk_object = '.(int)$new_object->id.'
+			if (!empty($TMoveLine)) { // on ne copie les coefs que si y a des lignes à copier...
+				$coef = new TNomenclatureCoefObject;
+				$TCoef = $coef->loadCoefObject($PDOdb, $object, $element, $object->id);
+				if (!empty($TCoef)) {
+					$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'nomenclature_coef_object
+							WHERE fk_object = '.(int) $new_object->id.'
 							AND type_object = "'.$element.'"';
 
-						$PDOdb->Execute($sql);
-						$TRes = $PDOdb->Get_All();
+					$PDOdb->Execute($sql);
+					$TRes = $PDOdb->Get_All();
 
-						if (empty($TRes)) // la nomenclature cible n'a pas de coef, on copie les coef de la source
-						{
-							foreach ($TCoef as $label => $coef)
-							{
-								$coef->fk_object = $new_object->id;
-								$coef->{OBJETSTD_MASTERKEY} = 0; // le champ id est toujours def
-								$coef->{OBJETSTD_DATECREATE}=time(); // ces champs dates aussi
-								$coef->{OBJETSTD_DATEUPDATE}=time();
-//								var_dump($new_object->id, $coef); exit;
-								$coef->save($PDOdb);
-							}
+					if (empty($TRes)) { // la nomenclature cible n'a pas de coef, on copie les coef de la source
+						foreach ($TCoef as $label => $coef) {
+							$coef->fk_object = $new_object->id;
+							$coef->{OBJETSTD_MASTERKEY} = 0; // le champ id est toujours def
+							$coef->{OBJETSTD_DATECREATE}=time(); // ces champs dates aussi
+							$coef->{OBJETSTD_DATEUPDATE}=time();
+							//                              var_dump($new_object->id, $coef); exit;
+							$coef->save($PDOdb);
 						}
 					}
 				}
-
-			}
-
-			foreach ($TMoveLine as $k => $line)
-			{
-				$line = $object->lines[$k];
-
-				$id_origin_line = $line->id;
-				if($object->element == 'propal') {
-					/** @var Propal $new_object */
-					$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, 'HT', 0, 0, $line->product_type, -1, $line->special_code, 0, 0, $line->pa_ht, $line->label, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit, '', 0, 0, $line->fk_remise_except);
-				}
-				elseif($object->element == 'commande') {
-					/** @var Commande $new_object */
-					$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, 0, $line->fk_remise_except, 'HT', 0, $line->date_start, $line->date_end, $line->product_type, -1, $line->special_code, 0, 0, $line->pa_ht, $line->label, $line->array_options, $line->fk_unit);
-				}
-				else {
-					/** @var Facture $new_object */
-					$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, $line->date_start, $line->date_end, 0, 0, $line->fk_remise_except, 'HT', 0, $line->product_type, -1, $line->special_code, 0, 0, 0, 0, $line->pa_ht, $line->label, $line->array_options, 100, 0, $line->fk_unit);
-				}
-
-				if ($newLineId < 0) {
-					dol_syslog('splitLines::error - addline. NEW line id : ' . $newLineId, LOG_ERR);
-				}
-
-
-				if(!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
-					// nomenclature de la ligne source
-					$n = new TNomenclature;
-					$n->loadByObjectId($PDOdb, $line->id, $element, true, $line->fk_product, $line->qty, $object->id);
-
-					if($n->rowid == 0 && (count($n->TNomenclatureDet) + count($n->TNomenclatureWorkstation)) > 0) {
-						// Le cas d'une nomenclature non chargée : ça ne sert à rien de copier la Nomenclature...
-						continue;
-					}
-				}
 			}
 		}
-		else
-		{
 
-			if ($object->element == 'commande' || $object->element == 'propal' ){
-				$id_new = $object->createFromClone($user, (int)GETPOST('socid'));
-			}else{
-				$id_new = $object->createFromClone($user, $object->id);
-			}
+		foreach ($TMoveLine as $k => $line) {
+			$line = $object->lines[$k];
 
-
-			if ($id_new > 0)
-			{
-				$json->newObjectId = $id_new;
-
-				$json->log[] = "création $id_new";
-				$new_object = new $classname($db);
-				$new_object->fetch($id_new);
-				//	var_dump($TMoveLine,$new_object->lines);
-
-				foreach($new_object->lines as $k=>$line) {
-
-					$lineid = empty($line->id) ? $line->rowid : $line->id;
-
-					if(!isset($TMoveLine[$k])) {
-						$json->log[] = "Suppresion ligne $k $lineid";
-							if ($object->element == 'commande' ){
-								// commande
-								$resDelete = $new_object->deleteline($user,$lineid);
-							} else {
-								//propal || facture
-								$resDelete = $new_object->deleteline($lineid);
-							}
-
-							if($resDelete < 0) {
-								dol_syslog('splitLines::error - deleteline. RES delete : ' . $resDelete, LOG_ERR);
-							}
-					}
-					else{
-						$json->log[] = "ok $k $lineid";
-					}
-				}
+			$id_origin_line = $line->id;
+			if ($object->element == 'propal') {
+				/** @var Propal $new_object */
+				$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, 'HT', 0, 0, $line->product_type, -1, $line->special_code, 0, 0, $line->pa_ht, $line->label, $line->date_start, $line->date_end, $line->array_options, $line->fk_unit, '', 0, 0, $line->fk_remise_except);
+			} elseif ($object->element == 'commande') {
+				/** @var Commande $new_object */
+				$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, 0, $line->fk_remise_except, 'HT', 0, $line->date_start, $line->date_end, $line->product_type, -1, $line->special_code, 0, 0, $line->pa_ht, $line->label, $line->array_options, $line->fk_unit);
 			} else {
-				dol_syslog('splitLines::error - createFromClone. ID New : ' . $id_new, LOG_ERR);
+				/** @var Facture $new_object */
+				$newLineId = $new_object->addline($line->desc, $line->subprice, $line->qty, $line->tva_tx, $line->localtax1_tx, $line->localtax2_tx, $line->fk_product, $line->remise_percent, $line->date_start, $line->date_end, 0, 0, $line->fk_remise_except, 'HT', 0, $line->product_type, -1, $line->special_code, 0, 0, 0, 0, $line->pa_ht, $line->label, $line->array_options, 100, 0, $line->fk_unit);
+			}
+
+			if ($newLineId < 0) {
+				dol_syslog('splitLines::error - addline. NEW line id : ' . $newLineId, LOG_ERR);
+			}
+
+
+			if (!empty($conf->nomenclature) && isModEnabled('nomenclature') && in_array($element, array('propal', 'commande'))) {
+				// nomenclature de la ligne source
+				$n = new TNomenclature;
+				$n->loadByObjectId($PDOdb, $line->id, $element, true, $line->fk_product, $line->qty, $object->id);
+
+				if ($n->rowid == 0 && (count($n->TNomenclatureDet) + count($n->TNomenclatureWorkstation)) > 0) {
+					// Le cas d'une nomenclature non chargée : ça ne sert à rien de copier la Nomenclature...
+					continue;
+				}
 			}
 		}
-
-		if($entity!=$conf->entity) {
-			$db->query("UPDATE ".MAIN_DB_PREFIX.$new_object->table_element." SET entity=".$entity." WHERE rowid=".$new_object->id );
+	} else {
+		if ($object->element == 'commande' || $object->element == 'propal' ) {
+			$id_new = $object->createFromClone($user, (int) GETPOST('socid'));
+		} else {
+			$id_new = $object->createFromClone($user, $object->id);
 		}
 
-		$linkToDocument = '';
-		if (!empty($new_object) && is_object($new_object) && method_exists($new_object, 'getNomUrl')){
-			$linkToDocument = $new_object->getNomUrl();
-		}
 
-		if (!empty($linkToDocument)) $linkToDocument = '- '.$linkToDocument;
+		if ($id_new > 0) {
+			$json->newObjectId = $id_new;
 
-		if ($action == 'split') {
-			// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
-			$json->msg = $langs->trans('SplitOk'); // dû a un bug de l'espace avec les set event messages j'ai découpé mais il faut normalement utilisé $langs->trans('SplitOk', $linkToDocument)
-			setEventMessage($langs->trans('SplitOk'));
-			setEventMessage($linkToDocument);
-		} elseif ($action == 'copy') {
-			// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
-			$json->msg = $langs->trans('SplitCopyOk'); // dû a un bug de l'espace avec les set event messages j'ai découpé mais il faut normalement utilisé $langs->trans('SplitCopyOk', $linkToDocument)
-			setEventMessage($json->msg);
-			setEventMessage($linkToDocument);
-		}
-	}
+			$json->log[] = "création $id_new";
+			$new_object = new $classname($db);
+			$new_object->fetch($id_new);
+			//	var_dump($TMoveLine,$new_object->lines);
 
-	if ($action == 'split' || $action == 'delete' )
-	{
-		$errors = 0;
-		foreach($object->lines as $k=>$line) {
-			$lineid = empty($line->id) ? $line->rowid : $line->id;
-			if(isset($TMoveLine[$k])) {
-				$json->log[] = "Suppresion ligne old $lineid";
+			foreach ($new_object->lines as $k=>$line) {
+				$lineid = empty($line->id) ? $line->rowid : $line->id;
 
-				if ($object->element == 'commande' ){
-					// commande
-					$resDel = $object->deleteline($user,$lineid);
+				if (!isset($TMoveLine[$k])) {
+					$json->log[] = "Suppresion ligne $k $lineid";
+					if ($object->element == 'commande' ) {
+						// commande
+						$resDelete = $new_object->deleteline($user, $lineid);
+					} else {
+						//propal || facture
+						$resDelete = $new_object->deleteline($lineid);
+					}
+
+					if ($resDelete < 0) {
+						dol_syslog('splitLines::error - deleteline. RES delete : ' . $resDelete, LOG_ERR);
+					}
 				} else {
-					//propal || facture
-					$resDel = $object->deleteline($lineid);
-				}
-
-
-				if ($resDel < 0) {
-					$errors++;
-					dol_syslog('splitLines::error - split or delete. Res delete : ' . $resDelete, LOG_ERR);
+					$json->log[] = "ok $k $lineid";
 				}
 			}
-		}
-
-		if(empty($errors) && $action == 'delete' ) {
-			// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
-			$json->msg = $langs->trans('SplitDeleteOk');
-			setEventMessage($json->msg);
+		} else {
+			dol_syslog('splitLines::error - createFromClone. ID New : ' . $id_new, LOG_ERR);
 		}
 	}
+
+	if ($entity!=$conf->entity) {
+		$db->query("UPDATE ".MAIN_DB_PREFIX.$new_object->table_element." SET entity=".$entity." WHERE rowid=".$new_object->id);
+	}
+
+	$linkToDocument = '';
+	if (!empty($new_object) && is_object($new_object) && method_exists($new_object, 'getNomUrl')) {
+		$linkToDocument = $new_object->getNomUrl();
+	}
+
+	if (!empty($linkToDocument)) $linkToDocument = '- '.$linkToDocument;
+
+	if ($action == 'split') {
+		// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
+		$json->msg = $langs->trans('SplitOk'); // dû a un bug de l'espace avec les set event messages j'ai découpé mais il faut normalement utilisé $langs->trans('SplitOk', $linkToDocument)
+		setEventMessage($langs->trans('SplitOk'));
+		setEventMessage($linkToDocument);
+	} elseif ($action == 'copy') {
+		// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
+		$json->msg = $langs->trans('SplitCopyOk'); // dû a un bug de l'espace avec les set event messages j'ai découpé mais il faut normalement utilisé $langs->trans('SplitCopyOk', $linkToDocument)
+		setEventMessage($json->msg);
+		setEventMessage($linkToDocument);
+	}
+}
+
+if ($action == 'split' || $action == 'delete' ) {
+	$errors = 0;
+	foreach ($object->lines as $k=>$line) {
+		$lineid = empty($line->id) ? $line->rowid : $line->id;
+		if (isset($TMoveLine[$k])) {
+			$json->log[] = "Suppresion ligne old $lineid";
+
+			if ($object->element == 'commande' ) {
+				// commande
+				$resDel = $object->deleteline($user, $lineid);
+			} else {
+				//propal || facture
+				$resDel = $object->deleteline($lineid);
+			}
+
+
+			if ($resDel < 0) {
+				$errors++;
+				dol_syslog('splitLines::error - split or delete. Res delete : ' . $resDelete, LOG_ERR);
+			}
+		}
+	}
+
+	if (empty($errors) && $action == 'delete' ) {
+		// coté js il y a une redirection, mais avec CSRF CHECK l'ancienne redirection avec get ne marche plus
+		$json->msg = $langs->trans('SplitDeleteOk');
+		setEventMessage($json->msg);
+	}
+}
 
 	print json_encode($json);

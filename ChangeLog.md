@@ -6,6 +6,7 @@
 - NEW : TK2601-4045 - Add support for mass actions on BOM (Bill of Materials) objects - *20/01/2026* - 1.8.0
 
 ## Release 1.7
+- FIX : Compat v23  - *02/12/2025* - 1.7.5
 - FIX : ST-5 - add field Maximum response date on supplier proposal massaction - *20/12/2025* - 1.7.4
 - FIX : ST-7 Add attachments when generating supplier RFQs - *19/12/2025* - 1.7.3
 - NEW : ST-7 Add user attachments when generating supplier RFQs (upload, store on proposal, include in emails, remove before confirm) - *15/12/2025* - 1.7.2

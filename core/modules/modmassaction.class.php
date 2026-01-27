@@ -38,7 +38,7 @@ class modmassaction extends DolibarrModules
 	 *
 	 *   @param      DoliDB		$db      Database handler
 	 */
-	function __construct($db)
+	public function __construct($db)
 	{
         global $langs,$conf;
 
@@ -103,12 +103,11 @@ class modmassaction extends DolibarrModules
 
         $this->tabs = array();
 
-        // Dictionaries
-	    if (! isModEnabled('massaction'))
-        {
-        	$conf->massaction=new stdClass();
-        	$conf->massaction->enabled=0;
-        }
+		// Dictionaries
+		if (! isModEnabled('massaction')) {
+			$conf->massaction=new stdClass();
+			$conf->massaction->enabled=0;
+		}
 		$this->dictionaries=array();
 
         // Boxes
@@ -130,10 +129,10 @@ class modmassaction extends DolibarrModules
 	 *		The init function add constants, boxes, permissions and menus (defined in constructor) into Dolibarr database.
 	 *		It also creates data directories
 	 *
-     *      @param      string	$options    Options when enabling module ('', 'noboxes')
+	 *      @param      string	$options    Options when enabling module ('', 'noboxes')
 	 *      @return     int             	1 if OK, 0 if KO
 	 */
-	function init($options='')
+	public function init($options = '')
 	{
 		$sql = array();
 
@@ -149,10 +148,10 @@ class modmassaction extends DolibarrModules
 	 *      Remove from database constants, boxes and permissions from Dolibarr database.
 	 *		Data directories are not deleted
 	 *
-     *      @param      string	$options    Options when enabling module ('', 'noboxes')
+	 *      @param      string	$options    Options when enabling module ('', 'noboxes')
 	 *      @return     int             	1 if OK, 0 if KO
 	 */
-	function remove($options='')
+	public function remove($options = '')
 	{
 		$sql = array();
 		return $this->_remove($sql, $options);

@@ -63,13 +63,27 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	public $errors = array();
 
 	/**
-	 * Constructor
+	 * Constructor.
+	 *
+	 * @param DoliDB $db Database handler.
 	 */
 	public function __construct($db)
 	{
 		$this->db = $db;
 	}
-
+	/**
+	 * Prepares and displays confirmation modals for specific mass actions.
+	 *
+	 * Handles the 'linktomailing' (select draft campaign) and 'linksalesperson'
+	 * (assign sales rep) actions by generating the required form parameters
+	 * and injecting the confirmation dialog into the output.
+	 *
+	 * @param array       $parameters  Hook parameters containing context.
+	 * @param object      $object      The current object.
+	 * @param string      $action      The current action.
+	 * @param HookManager $hookmanager The hook manager instance.
+	 * @return void Sets $this->resprints with the form HTML.
+	 */
 	public function doPreMassActions($parameters, &$object, &$action, $hookmanager)
 	{
 		global $conf, $user, $massaction, $langs;
@@ -78,12 +92,11 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$toprint = '';
 
 		// Action en masse d'ajout de destinataires à un e-mailing, choix de l'e-mailing
-		if($massaction == 'linktomailing' && isModEnabled('mailing') && $user->hasRight('mailing', 'creer')
+		if ($massaction == 'linktomailing' && isModEnabled('mailing') && $user->hasRight('mailing', 'creer')
 			&& (in_array('thirdpartylist', $TContext)
 				|| in_array('contactlist', $TContext)
 				|| in_array('memberlist', $TContext)
-				|| in_array('userlist', $TContext)))
-		{
+				|| in_array('userlist', $TContext))) {
 			//Selection du mailing concerné
 			$TMailings = array();
 
@@ -114,9 +127,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 
 		// Action en masse d'affectation de commerciaux aux tiers, choix des options
-		if($massaction == 'linksalesperson' && $user->hasRight('societe', 'creer')
-			&& in_array('thirdpartylist', $TContext))
-		{
+		if ($massaction == 'linksalesperson' && $user->hasRight('societe', 'creer')
+			&& in_array('thirdpartylist', $TContext)) {
 			$form = new Form($this->db);
 			$userList = $form->select_dolusers('', 'select_salesperson', 1, '', 0, '', '', 0, 0, 0, '', 0, '', '', 0, 0, 1);
 
@@ -146,9 +158,9 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 	/**
 	 * Overloading the doMassActions function : replacing the parent's function with the one below
 	 *
-	 * @param   array()         $parameters     Hook metadatas (context, etc...)
-	 * @param   CommonObject    &$object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
-	 * @param   string          &$action        Current action (if set). Generally create or edit or null
+	 * @param   array       	$parameters     Hook metadatas (context, etc...)
+	 * @param   CommonObject    $object        The object to process (an invoice if you are in invoice module, a propale in propale's module, etc...)
+	 * @param   string          $action        Current action (if set). Generally create or edit or null
 	 * @param   HookManager     $hookmanager    Hook manager propagated to allow calling another hook
 	 * @return  int                             < 0 on error, 0 on success, 1 to replace standard code
 	 */
@@ -157,7 +169,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		global $conf, $user, $langs, $db, $massaction, $diroutputmassaction;
 		$langs->load('massaction@massaction');
 
-		if(empty($massaction) && GETPOSTISSET('massaction')) $massaction = GETPOST('massaction', 'alphanohtml');
+		if (empty($massaction) && GETPOSTISSET('massaction')) $massaction = GETPOST('massaction', 'alphanohtml');
 
 		$TContext = explode(":", $parameters['context']);
 		$confirm = GETPOST('confirm', 'alphanohtml');
@@ -167,8 +179,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$errormsg = ''; // Error message
 
 		// Action en masse "Génération archive zip"
-		if ($massaction == 'generate_zip' && strpos($parameters['context'], 'list') !== 0)
-		{
+		if ($massaction == 'generate_zip' && strpos($parameters['context'], 'list') !== 0) {
 			// @TODO Ask for compression format and filename
 			/*if($massaction == 'generate_zip')
 			{
@@ -182,13 +193,12 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			}*/
 
 
-			if (empty($diroutputmassaction) || empty($parameters['uploaddir']))
-			{
+			if (empty($diroutputmassaction) || empty($parameters['uploaddir'])) {
 				$error++;
 				$errormsg = $langs->trans('NoDirectoryAvailable');
 			}
 
-			if(!$error) {
+			if (!$error) {
 				// Lists all file to add in the zip archive
 				require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 				$formfile = new FormFile($db);
@@ -196,7 +206,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				foreach ($parameters['toselect'] as $objectid) {
 					$object->fetch($objectid);
 					$ref = dol_sanitizeFileName($object->ref);
-					if($object->element == 'invoice_supplier') $subdir = get_exdir($object->id, 2, 0, 0, $object, 'invoice_supplier').$ref;
+					if ($object->element == 'invoice_supplier') $subdir = get_exdir($object->id, 2, 0, 0, $object, 'invoice_supplier').$ref;
 					else $subdir = $ref;
 
 					$filedir = $parameters['uploaddir'] . '/' . $subdir;
@@ -217,7 +227,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				}
 			}
 
-			if(!$error) {
+			if (!$error) {
 				//$compressmode = GETPOST('compress_mode', 'alphanohtml');
 				$compressmode = 'zip';
 				//$filename = GETPOST('filename');
@@ -239,18 +249,16 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				dol_delete_dir_recursive($tempdir);
 				// Auto Download
 				if (file_exists($diroutputmassaction.'/'.$filename)) {
-					if (getDolGlobalString('MASSACTION_AUTO_DOWNLOAD')){
+					if (getDolGlobalString('MASSACTION_AUTO_DOWNLOAD')) {
 						header('Content-Type: application/zip');
 						header('Content-Disposition: attachment; filename="'.$filename.'"');
 						header('Content-Length: ' . filesize($diroutputmassaction.'/'.$filename));
 						readfile($diroutputmassaction.'/'.$filename);
-					}
-					else {
+					} else {
 						setEventMessage($langs->trans('MassActionZIPGenerated', count($toarchive)));
 					}
-				}
-				else{
-					setEventMessage($langs->trans('MassActionErrorGeneration'),'errors');
+				} else {
+					setEventMessage($langs->trans('MassActionErrorGeneration'), 'errors');
 				}
 				header('Location:'.$_SERVER['PHP_SELF']);
 				exit;
@@ -262,8 +270,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			(in_array('thirdpartylist', $TContext)
 				|| in_array('contactlist', $TContext)
 				|| in_array('memberlist', $TContext)
-				|| in_array('userlist', $TContext)))
-		{
+				|| in_array('userlist', $TContext))) {
 			$mailing_selected = GETPOST('select_mailings', 'int');
 			$toselect = GETPOST('toselect', 'array');
 
@@ -309,8 +316,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 		// Action en masse d'affectation de commercial
 		if ($action == 'confirm_linksalesperson' && $confirm == 'yes' && $user->hasRight('societe', 'creer') &&
-			in_array('thirdpartylist', $TContext))
-		{
+			in_array('thirdpartylist', $TContext)) {
 			$toselect = GETPOST('toselect', 'array');
 			$select_salesperson = GETPOST('select_salesperson', 'array');
 			// Option : 0 = ajout, 1 = remplacement, 2 = retrait
@@ -318,20 +324,20 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 
 			$societe = new Societe($this->db);
 
-			foreach($toselect as $thirdparty_id) {
+			foreach ($toselect as $thirdparty_id) {
 				$res = $societe->fetch($thirdparty_id);
-				if($res) {
-					if($salesperson_option == 2) {
-						foreach($select_salesperson as $id_salesperson) {
+				if ($res) {
+					if ($salesperson_option == 2) {
+						foreach ($select_salesperson as $id_salesperson) {
 							$res = $societe->del_commercial($user, $id_salesperson);
-							if($res < 0) {
+							if ($res < 0) {
 								$error++;
 								$errormsg = $societe->error;
 							}
 						}
 					} else {
 						$res = $societe->setSalesRep($select_salesperson, ($salesperson_option == 0));
-						if($res < 0) {
+						if ($res < 0) {
 							$error++;
 							$errormsg = $societe->error;
 						}
@@ -342,7 +348,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 				}
 			}
 
-			if(!$error) {
+			if (!$error) {
 				setEventMessage($langs->trans('MassActionLinkSalesPersonSuccess'));
 			}
 		}
@@ -374,20 +380,18 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$TContext = explode(":", $parameters['context']);
 
 		// Ajout de l'action en masse "Génération archive zip" sur les listes
-		if (strpos($parameters['context'], 'list') !== false)
-		{
+		if (strpos($parameters['context'], 'list') !== false) {
 			$label = '<span class="fa fa-file-archive paddingrightonly"></span> ' . $langs->trans("MassActionGenerateZIP");
 			$this->resprints = '<option value="generate_zip" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
 		}
 
 		// Ajout de l'action en masse "Envoi par e-mail" sur la liste des factures fournisseur
-		if (in_array('supplierinvoicelist', $TContext))
-		{
+		if (in_array('supplierinvoicelist', $TContext)) {
 			$this->resprints .= '<option value="presend">'.$langs->trans("SendByMail").'</option>';
 		}
 
 		// Ajout de l'action en masse d'ajout de destinataires à un e-mailing
-		if(in_array('thirdpartylist', $TContext)
+		if (in_array('thirdpartylist', $TContext)
 			|| in_array('contactlist', $TContext)
 			|| in_array('memberlist', $TContext)
 			|| in_array('userlist', $TContext)) {
@@ -399,7 +403,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		}
 
 		// Ajout de l'action en masse d'affectation de commerciaux aux tiers
-		if(in_array('thirdpartylist', $TContext)){
+		if (in_array('thirdpartylist', $TContext)) {
 			if ($user->hasRight('societe', 'creer')) {
 				$label = '<span class="fa fa-user paddingrightonly"></span> ' . $langs->trans("MassActionLinkSalesperson");
 				$this->resprints .= '<option value="linksalesperson" data-html="' . dol_escape_htmltag($label) . '">' . $label . '</option>';
@@ -413,8 +417,16 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 			return -1;
 		}
 	}
-
-	public function selectCompression(): string {
+	/**
+	 * Generates an HTML dropdown to select a compression method.
+	 *
+	 * Checks for server support (e.g., Gzip, Bzip2) and automatically disables
+	 * options if the required PHP functions are missing.
+	 *
+	 * @return string The HTML <select> string.
+	 */
+	public function selectCompression()
+	{
 		global $langs;
 
 		$compression['gz'] = array('function' => 'gzopen', 'id' => 'compression_gzip', 'label' => $langs->trans("Gzip"));
@@ -422,10 +434,8 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		$compression['bz'] = array('function' => 'bzopen',       'id' => 'compression_bzip', 'label' => $langs->trans("Bzip2"));
 
 		$select = '<select name="compression_mode">';
-		foreach($compression as $key => $val)
-		{
-			if (! $val['function'] || function_exists($val['function']))	// Enabled export format
-			{
+		foreach ($compression as $key => $val) {
+			if (! $val['function'] || function_exists($val['function'])) {	// Enabled export format
 				$select.= '<option value="'.$val['id'].'">'.$val['label'].'</option>';
 			}
 			else	// Disabled export format
@@ -528,7 +538,7 @@ class Actionsmassaction extends \massaction\RetroCompatCommonHookActions
 		global $langs, $user, $conf;
 
 		$TContexts = explode(':', $parameters['context']);
-		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard', 'bomcard'];
+		$TAllowedContexts = ['propalcard', 'ordercard', 'invoicecard'];
 
 		$commonContexts = array_intersect($TContexts, $TAllowedContexts);
 
@@ -795,13 +805,13 @@ public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
 			}
 
 			if ($displayButton) {
-				if($object->element=='facture') $idvar = 'facid';
+				if ($object->element=='facture') $idvar = 'facid';
 				else $idvar = 'id';
-				if($object->element == 'propal') {
+				if ($object->element == 'propal') {
 					$fiche = '/comm/propal/card.php';
-				} else if($object->element == 'commande') {
+				} elseif ($object->element == 'commande') {
 					$fiche = '/commande/card.php';
-				} else if($object->element == 'facture') {
+				} elseif ($object->element == 'facture') {
 					$fiche = '/compta/facture/card.php';
 				}
 
