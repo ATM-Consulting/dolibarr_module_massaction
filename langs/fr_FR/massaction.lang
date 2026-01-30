@@ -140,3 +140,5 @@ MassActionFailedToSendEmail = Échec de l'envoi du mail :
 FileTransmitted=Fichier transmis
 FileDeleted=Fichier supprimé
 ErrorFailedToDeleteFile=Impossible de supprimer le fichier %s
+# Supplier proposal
+SupplierProposalDate=Date maximale de réponse
