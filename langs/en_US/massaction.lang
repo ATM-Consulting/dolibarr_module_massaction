@@ -125,3 +125,5 @@ MassActionFailedToSendEmail = Failed to send email :
 FileTransmitted=File transmitted
 FileDeleted=File deleted
 ErrorFailedToDeleteFile=Failed to delete file %s
+# Supplier proposal
+SupplierProposalDate=Maximum response date
