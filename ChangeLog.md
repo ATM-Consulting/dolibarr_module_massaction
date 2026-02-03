@@ -1,6 +1,8 @@
 # Changelog for massaction
 
 ## Unreleased
+
+## Release 1.8
 - FIX : ST-5 - store supplier reference on RFQ using ref_supplier alias for compatibility - *20/01/2026* - 1.8.0
 - NEW : ST-5 - copy customer reference to supplier proposal when creating from propal/order (configurable) - *19/01/2026* - 1.8.0
 - NEW : TK2601-4045 - Add support for mass actions on BOM (Bill of Materials) objects - *20/01/2026* - 1.8.0
